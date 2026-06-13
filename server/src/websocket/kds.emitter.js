@@ -22,7 +22,3 @@ export const emitItemCompleted = (orderId, itemId) =>
 /** Broadcast order payment — removes ticket from KDS. */
 export const emitOrderPaid = (orderId) =>
   getIO().emit('order:paid', { order_id: orderId });
-
-/** Broadcast cook assignment update. */
-export const emitCookAssigned = (orderId, itemId, cookId, cookName) =>
-  getIO().emit('cook:assigned', { order_id: orderId, item_id: itemId, cook_id: cookId, cook_name: cookName });
