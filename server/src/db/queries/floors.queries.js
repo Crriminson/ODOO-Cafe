@@ -1,4 +1,4 @@
-import { query } from '../../config/db.js';
+import { db } from '../../config/db.js';
 
 /**
  * Fetch all floors with their tables nested, each table including
@@ -9,27 +9,29 @@ import { query } from '../../config/db.js';
  * @returns {Promise<Array>} grouped floor objects
  */
 export const getAllFloorsWithTables = async () => {
-  const { rows } = await query(`
-    SELECT
-      f.id          AS floor_id,
-      f.name        AS floor_name,
-      f.created_at  AS floor_created_at,
-      t.id,
-      t.floor_id,
-      t.table_number,
-      t.seats,
-      t.is_active,
-      t.created_at,
-      t.updated_at,
-      EXISTS (
+  const rows = await db('floors as f')
+    .select(
+      'f.id as floor_id',
+      'f.name as floor_name',
+      'f.created_at as floor_created_at',
+      't.id',
+      't.floor_id',
+      't.table_number',
+      't.seats',
+      't.is_active',
+      't.created_at',
+      't.updated_at',
+      db.raw(`EXISTS (
         SELECT 1 FROM orders o
         WHERE o.table_id = t.id
           AND o.status NOT IN ('paid', 'cancelled')
-      ) AS has_active_order
-    FROM floors f
-    LEFT JOIN tables t ON t.floor_id = f.id
-    ORDER BY f.id ASC, t.table_number ASC
-  `);
+      ) AS has_active_order`)
+    )
+    .leftJoin('tables as t', 't.floor_id', 'f.id')
+    .orderBy([
+      { column: 'f.id', order: 'asc' },
+      { column: 't.table_number', order: 'asc' }
+    ]);
 
   // Group flat rows into { id, name, created_at, tables: [...] }
   const floorMap = new Map();
@@ -66,22 +68,23 @@ export const getAllFloorsWithTables = async () => {
  * Insert a new floor.
  * @param {string} name
  */
-export const createFloor = (name) =>
-  query(
-    `INSERT INTO floors (name) VALUES ($1)
-     RETURNING id, name, created_at`,
-    [name]
-  );
+export const createFloor = async (name) => {
+  const rows = await db('floors')
+    .insert({ name })
+    .returning(['id', 'name', 'created_at']);
+  return { rows };
+};
 
 /**
  * Fetch a single floor by id.
  * @param {number} id
  */
-export const getFloorById = (id) =>
-  query(
-    `SELECT id, name, created_at FROM floors WHERE id = $1`,
-    [id]
-  );
+export const getFloorById = async (id) => {
+  const rows = await db('floors')
+    .select('id', 'name', 'created_at')
+    .where({ id });
+  return { rows };
+};
 
 /**
  * Returns true if a floor with this name already exists.
@@ -89,9 +92,9 @@ export const getFloorById = (id) =>
  * @returns {Promise<boolean>}
  */
 export const floorNameExists = async (name) => {
-  const { rows } = await query(
-    `SELECT 1 FROM floors WHERE name = $1 LIMIT 1`,
-    [name]
-  );
+  const rows = await db('floors')
+    .where({ name })
+    .limit(1)
+    .select(1);
   return rows.length > 0;
 };

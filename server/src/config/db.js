@@ -1,4 +1,5 @@
 import pg from 'pg';
+import knex from 'knex';
 import { env } from './env.js';
 
 const { Pool } = pg;
@@ -29,5 +30,23 @@ export const query = (text, params) => pool.query(text, params);
 
 /** Grab a dedicated client from the pool — caller must call client.release(). */
 export const getClient = () => pool.connect();
+
+/** Knex instance configured for the application database. */
+export const db = knex({
+  client: 'pg',
+  connection: env.DATABASE_URL
+    ? env.DATABASE_URL
+    : {
+        host:     env.DB.host,
+        port:     env.DB.port,
+        user:     env.DB.user,
+        password: env.DB.password,
+        database: env.DB.database,
+      },
+  pool: {
+    min: 2,
+    max: 20,
+  }
+});
 
 export default pool;

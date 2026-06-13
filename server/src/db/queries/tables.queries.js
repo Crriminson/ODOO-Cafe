@@ -1,26 +1,24 @@
-import { query } from '../../config/db.js';
+import { db } from '../../config/db.js';
 
 /**
  * Insert a new table on a given floor.
  */
-export const createTable = (floor_id, table_number, seats) =>
-  query(
-    `INSERT INTO tables (floor_id, table_number, seats)
-     VALUES ($1, $2, $3)
-     RETURNING id, floor_id, table_number, seats, is_active, created_at, updated_at`,
-    [floor_id, table_number, seats]
-  );
+export const createTable = async (floor_id, table_number, seats) => {
+  const rows = await db('tables')
+    .insert({ floor_id, table_number, seats })
+    .returning(['id', 'floor_id', 'table_number', 'seats', 'is_active', 'created_at', 'updated_at']);
+  return { rows };
+};
 
 /**
  * Fetch a single table by id.
  */
-export const getTableById = (id) =>
-  query(
-    `SELECT id, floor_id, table_number, seats, is_active, created_at, updated_at
-     FROM tables
-     WHERE id = $1`,
-    [id]
-  );
+export const getTableById = async (id) => {
+  const rows = await db('tables')
+    .select('id', 'floor_id', 'table_number', 'seats', 'is_active', 'created_at', 'updated_at')
+    .where({ id });
+  return { rows };
+};
 
 /**
  * Dynamic UPDATE — only touches the columns actually provided.
@@ -28,44 +26,40 @@ export const getTableById = (id) =>
  * @param {number} id
  * @param {{ table_number?: number, seats?: number, is_active?: boolean }} fields
  */
-export const updateTable = (id, fields) => {
-  const allowed    = ['table_number', 'seats', 'is_active'];
-  const setClauses = [];
-  const values     = [];
-  let   paramIndex = 1;
+export const updateTable = async (id, fields) => {
+  const allowed = ['table_number', 'seats', 'is_active'];
+  const updateFields = {};
 
   for (const col of allowed) {
     if (fields[col] !== undefined) {
-      setClauses.push(`${col} = $${paramIndex++}`);
-      values.push(fields[col]);
+      updateFields[col] = fields[col];
     }
   }
 
   // Always bump updated_at
-  setClauses.push(`updated_at = NOW()`);
-  values.push(id); // id is always the last param
+  updateFields.updated_at = db.fn.now();
 
-  return query(
-    `UPDATE tables
-     SET ${setClauses.join(', ')}
-     WHERE id = $${paramIndex}
-     RETURNING id, floor_id, table_number, seats, is_active, created_at, updated_at`,
-    values
-  );
+  const rows = await db('tables')
+    .where({ id })
+    .update(updateFields)
+    .returning(['id', 'floor_id', 'table_number', 'seats', 'is_active', 'created_at', 'updated_at']);
+  return { rows };
 };
 
 /**
  * Soft-delete: sets is_active = false. Row stays in DB.
  * @param {number} id
  */
-export const softDeleteTable = (id) =>
-  query(
-    `UPDATE tables
-     SET is_active = false, updated_at = NOW()
-     WHERE id = $1
-     RETURNING id`,
-    [id]
-  );
+export const softDeleteTable = async (id) => {
+  const rows = await db('tables')
+    .where({ id })
+    .update({
+      is_active: false,
+      updated_at: db.fn.now(),
+    })
+    .returning('id');
+  return { rows };
+};
 
 /**
  * Returns true if a table with this number already exists on the given floor.
@@ -78,14 +72,15 @@ export const softDeleteTable = (id) =>
  * @returns {Promise<boolean>}
  */
 export const tableNumberExistsOnFloor = async (floor_id, table_number, excludeId = null) => {
-  const { rows } = await query(
-    `SELECT 1 FROM tables
-     WHERE floor_id    = $1
-       AND table_number = $2
-       AND ($3::int IS NULL OR id != $3)
-     LIMIT 1`,
-    [floor_id, table_number, excludeId]
-  );
+  const queryBuilder = db('tables')
+    .where({ floor_id, table_number })
+    .limit(1);
+
+  if (excludeId !== null) {
+    queryBuilder.whereNot({ id: excludeId });
+  }
+
+  const rows = await queryBuilder.select(1);
   return rows.length > 0;
 };
 
@@ -95,9 +90,9 @@ export const tableNumberExistsOnFloor = async (floor_id, table_number, excludeId
  * @returns {Promise<boolean>}
  */
 export const floorExists = async (id) => {
-  const { rows } = await query(
-    `SELECT 1 FROM floors WHERE id = $1 LIMIT 1`,
-    [id]
-  );
+  const rows = await db('floors')
+    .where({ id })
+    .limit(1)
+    .select(1);
   return rows.length > 0;
 };
