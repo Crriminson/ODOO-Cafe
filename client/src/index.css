@@ -14,8 +14,8 @@
   --color-surface:  #FFFFFF;
 
   /* Accent */
-  --color-accent:       #A67FA1;
-  --color-accent-hover: #8A6685;
+  --color-accent:       #F5C142;
+  --color-accent-hover: #E0AE30;
 
   /* Text */
   --color-text:             #1A1A1A;
@@ -91,4 +91,5 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
 

@@ -50,7 +50,7 @@ const getMockResponse = (path, options) => {
   if (path.startsWith('/categories')) {
     return {
       categories: [
-        { id: 1, name: "Coffee", color: "#A67FA1" },
+        { id: 1, name: "Coffee", color: "#F5C142" },
         { id: 2, name: "Bakery", color: "#10B981" }
       ]
     };
@@ -197,4 +197,5 @@ export const apiClient = {
 
 export { API_BASE_URL };
 export default apiClient;
+
 

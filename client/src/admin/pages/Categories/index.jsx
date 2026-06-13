@@ -4,7 +4,7 @@ import { getCategories, createCategory, updateCategory, deleteCategory } from '.
 
 /* ── helpers ─────────────────────────────────────────── */
 const PRESET_COLORS = [
-  '#A67FA1', '#10B981', '#3B82F6', '#F59E0B',
+  '#F5C142', '#10B981', '#3B82F6', '#F59E0B',
   '#EC4899', '#8B5CF6', '#EF4444', '#14B8A6',
 ];
 
@@ -141,8 +141,8 @@ function CategoryModal({ initial, onSave, onClose }) {
             <button type="button" onClick={onClose}
                     className="text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] transition-colors">Cancel</button>
             <button type="submit" disabled={saving}
-                    className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 transition-colors duration-150 hover:bg-[#8A6685]"
-                    style={{ background: '#A67FA1', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)', opacity: saving ? 0.7 : 1 }}>
+                    className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 transition-colors duration-150 hover:bg-[#E0AE30]"
+                    style={{ background: '#F5C142', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)', opacity: saving ? 0.7 : 1 }}>
               {saving ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : 'Save category'}
             </button>
           </div>
@@ -195,7 +195,7 @@ export default function Categories() {
       {/* Heading */}
       <div className="flex items-center gap-3 mb-1">
         <div className="w-9 h-9 rounded-lg flex items-center justify-center border-2 flex-shrink-0"
-             style={{ background: '#A67FA1', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
+             style={{ background: '#F5C142', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
           <Tag size={18} strokeWidth={2.5} style={{ color: '#1A1A1A' }} />
         </div>
         <h1 className="text-[1.5rem] font-black text-[#1A1A1A] leading-tight">Categories</h1>
@@ -210,8 +210,8 @@ export default function Categories() {
              style={{ background: '#F5F0E8' }}>
           <span className="text-sm font-bold text-[#1A1A1A]">{categories.length} categories</span>
           <button onClick={() => setEditTarget({})}
-                  className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#8A6685] transition-colors duration-150"
-                  style={{ background: '#A67FA1', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
+                  className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#E0AE30] transition-colors duration-150"
+                  style={{ background: '#F5C142', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
             <Plus size={15} strokeWidth={2} /> Add category
           </button>
         </div>
@@ -239,8 +239,8 @@ export default function Categories() {
                     <p className="text-sm font-bold text-[#1A1A1A] mb-1">No categories yet</p>
                     <p className="text-xs text-[#6B7280] mb-4">Add your first category to organise the menu.</p>
                     <button onClick={() => setEditTarget({})}
-                            className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#8A6685] transition-colors duration-150"
-                            style={{ background: '#A67FA1', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
+                            className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#E0AE30] transition-colors duration-150"
+                            style={{ background: '#F5C142', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
                       <Plus size={14} strokeWidth={2} /> Add category
                     </button>
                   </td>
@@ -282,5 +282,6 @@ export default function Categories() {
     </div>
   );
 }
+
 
 

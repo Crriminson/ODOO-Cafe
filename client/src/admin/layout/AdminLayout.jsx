@@ -26,7 +26,7 @@ export default function AdminLayout() {
         <div className="px-5 py-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                 style={{ background: '#A67FA1', boxShadow: 'var(--shadow-sm)' }}>
+                 style={{ background: '#F5C142', boxShadow: 'var(--shadow-sm)' }}>
               <span className="text-sm font-black" style={{ color: '#1A1A1A' }}>☕</span>
             </div>
             <span className="text-[0.9rem] font-black tracking-tight text-white">Odoo Cafe</span>
@@ -49,7 +49,7 @@ export default function AdminLayout() {
               }
               style={({ isActive }) =>
                 isActive
-                  ? { background: '#A67FA1' }
+                  ? { background: '#F5C142' }
                   : { background: 'transparent' }
               }
               onMouseEnter={(e) => {
@@ -98,7 +98,7 @@ export default function AdminLayout() {
                 style={{ background: '#1A1A1A', borderColor: 'rgba(255,255,255,0.08)' }}>
           <span className="text-sm font-bold text-white tracking-tight">Odoo Cafe POS</span>
           <span className="text-xs font-bold uppercase tracking-widest"
-                style={{ color: '#A67FA1' }}>Admin</span>
+                style={{ color: '#F5C142' }}>Admin</span>
         </header>
 
         {/* Page content — cream canvas */}
@@ -109,4 +109,5 @@ export default function AdminLayout() {
     </div>
   );
 }
+
 

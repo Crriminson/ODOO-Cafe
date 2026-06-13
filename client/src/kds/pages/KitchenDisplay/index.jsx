@@ -270,7 +270,7 @@ export default function KitchenDisplay() {
       fontWeight: '900',
       textTransform: 'uppercase',
       letterSpacing: '1px',
-      color: '#A67FA1',
+      color: '#F5C142',
       display: 'flex',
       alignItems: 'center',
       gap: '8px',
@@ -448,7 +448,7 @@ export default function KitchenDisplay() {
     },
     cardActionBtn: {
       width: '100%',
-      backgroundColor: '#A67FA1',
+      backgroundColor: '#F5C142',
       border: '2px solid #1A1A1A',
       padding: '8px 12px',
       fontWeight: '800',
@@ -776,5 +776,6 @@ export default function KitchenDisplay() {
     </div>
   );
 }
+
 
 
