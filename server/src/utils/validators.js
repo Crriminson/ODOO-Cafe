@@ -103,3 +103,73 @@ export const updatePaymentMethodsSchema = z.array(
     upi_id:     z.string().nullable().optional(),
   })
 ).min(1);
+
+// ─── Customers ───────────────────────────────────────────────────────────────
+
+export const createCustomerSchema = z.object({
+  name:  z.string().min(1, 'Name is required').max(100),
+  email: z.string().email('Invalid email').max(150).optional().nullable(),
+  phone: z.string().max(20).optional().nullable(),
+});
+
+export const updateCustomerSchema = z.object({
+  name:  z.string().min(1).max(100).optional(),
+  email: z.string().email('Invalid email').max(150).optional().nullable(),
+  phone: z.string().max(20).optional().nullable(),
+}).refine(
+  (data) => Object.keys(data).length > 0,
+  { message: 'At least one field must be provided' }
+);
+
+// ─── Coupons ─────────────────────────────────────────────────────────────────
+
+export const createCouponSchema = z.object({
+  code:           z.string().min(1).max(50),
+  discount_type:  z.enum(['percentage', 'fixed']),
+  discount_value: z.number().positive(),
+});
+
+export const updateCouponSchema = z.object({
+  code:           z.string().min(1).max(50).optional(),
+  discount_type:  z.enum(['percentage', 'fixed']).optional(),
+  discount_value: z.number().positive().optional(),
+}).refine(
+  (data) => Object.keys(data).length > 0,
+  { message: 'At least one field must be provided' }
+);
+
+// ─── Promotions ──────────────────────────────────────────────────────────────
+
+export const createPromotionSchema = z.object({
+  applies_to:       z.enum(['product', 'order']),
+  discount_type:    z.enum(['percentage', 'fixed']),
+  discount_value:   z.number().positive(),
+  min_quantity:     z.number().int().positive().optional().nullable(),
+  min_order_amount: z.number().nonnegative().optional().nullable(),
+});
+
+export const updatePromotionSchema = z.object({
+  applies_to:       z.enum(['product', 'order']).optional(),
+  discount_type:    z.enum(['percentage', 'fixed']).optional(),
+  discount_value:   z.number().positive().optional(),
+  min_quantity:     z.number().int().positive().optional().nullable(),
+  min_order_amount: z.number().nonnegative().optional().nullable(),
+}).refine(
+  (data) => Object.keys(data).length > 0,
+  { message: 'At least one field must be provided' }
+);
+
+// ─── Cooks ───────────────────────────────────────────────────────────────────
+
+export const createCookSchema = z.object({
+  name:         z.string().min(1).max(100),
+  category_ids: z.array(z.number().int().positive()).optional().default([]),
+});
+
+export const updateCookSchema = z.object({
+  name:         z.string().min(1).max(100).optional(),
+  category_ids: z.array(z.number().int().positive()).optional(),
+}).refine(
+  (data) => Object.keys(data).length > 0,
+  { message: 'At least one field must be provided' }
+);
