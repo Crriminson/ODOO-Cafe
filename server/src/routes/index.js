@@ -18,6 +18,7 @@ import floorsRouter     from './floors.routes.js';
 import tablesRouter     from './tables.routes.js';
 import settingsRouter   from './settings.routes.js';
 import sessionsRouter   from './sessions.routes.js';
+import ordersRouter     from './orders.routes.js';
 
 
 const router = Router();
@@ -47,7 +48,7 @@ router.use('/products',   productsRouter);
 router.use('/categories', categoriesRouter);
 router.use('/floors',     floorsRouter);
 router.use('/tables',     tablesRouter);
-router.use('/orders',     (await import('./orders.routes.js')).default);
+router.use('/orders',     ordersRouter);
 router.use('/customers',  stub('Customers'));
 router.use('/sessions',   sessionsRouter);
 router.use('/coupons',    stub('Coupons'));
