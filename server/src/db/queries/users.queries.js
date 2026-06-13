@@ -1,48 +1,50 @@
-import { query } from '../../config/db.js';
+import { db } from '../../config/db.js';
 
 /**
  * Find an active user by email.
  * Returns the full row including password_hash (needed for bcrypt comparison).
  */
-export const findUserByEmail = (email) =>
-  query(
-    `SELECT id, name, email, password_hash, role, is_active
-     FROM users
-     WHERE email = $1 AND is_active = TRUE
-     LIMIT 1`,
-    [email]
-  );
+export const findUserByEmail = async (email) => {
+  const rows = await db('users')
+    .select('id', 'name', 'email', 'password_hash', 'role', 'is_active')
+    .where({ email, is_active: true })
+    .limit(1);
+  return { rows };
+};
 
 /**
  * Find a user by id — excludes password_hash (safe for client response).
  */
-export const findUserById = (id) =>
-  query(
-    `SELECT id, name, email, role, is_active, created_at
-     FROM users
-     WHERE id = $1
-     LIMIT 1`,
-    [id]
-  );
+export const findUserById = async (id) => {
+  const rows = await db('users')
+    .select('id', 'name', 'email', 'role', 'is_active', 'created_at')
+    .where({ id })
+    .limit(1);
+  return { rows };
+};
 
 /**
  * Insert a new user. Returns the safe (no password_hash) columns.
  */
-export const createUser = (name, email, passwordHash, role) =>
-  query(
-    `INSERT INTO users (name, email, password_hash, role)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id, name, email, role, created_at`,
-    [name, email, passwordHash, role]
-  );
+export const createUser = async (name, email, passwordHash, role) => {
+  const rows = await db('users')
+    .insert({
+      name,
+      email,
+      password_hash: passwordHash,
+      role,
+    })
+    .returning(['id', 'name', 'email', 'role', 'created_at']);
+  return { rows };
+};
 
 /**
  * Returns true if an account with this email already exists (any role, any status).
  */
 export const emailExists = async (email) => {
-  const { rows } = await query(
-    'SELECT 1 FROM users WHERE email = $1 LIMIT 1',
-    [email]
-  );
+  const rows = await db('users')
+    .where({ email })
+    .limit(1)
+    .select(1);
   return rows.length > 0;
 };

@@ -11,7 +11,12 @@
  */
 
 import { Router } from 'express';
-import authRouter from './auth.routes.js';
+import authRouter       from './auth.routes.js';
+import categoriesRouter from './categories.routes.js';
+import productsRouter   from './products.routes.js';
+import floorsRouter     from './floors.routes.js';
+import tablesRouter     from './tables.routes.js';
+import settingsRouter   from './settings.routes.js';
 
 const router = Router();
 
@@ -36,19 +41,19 @@ router.use('/auth',       authRouter);
 
 // ─── Feature stubs — replace stub() with real router as each module is built ──
 
-router.use('/products',   stub('Products'));
-router.use('/categories', stub('Categories'));
-router.use('/floors',     stub('Floors'));
-router.use('/tables',     stub('Tables'));
-router.use('/orders',     stub('Orders'));
+router.use('/products',   productsRouter);
+router.use('/categories', categoriesRouter);
+router.use('/floors',     floorsRouter);
+router.use('/tables',     tablesRouter);
+router.use('/orders',     (await import('./orders.routes.js')).default);
 router.use('/customers',  stub('Customers'));
-router.use('/sessions',   stub('Sessions'));
+router.use('/sessions',   (await import('./sessions.routes.js')).default);
 router.use('/coupons',    stub('Coupons'));
 router.use('/promotions', stub('Promotions'));
 router.use('/employees',  stub('Employees'));
 router.use('/cooks',      stub('Cooks'));
 router.use('/kds',        stub('KDS'));
 router.use('/reports',    stub('Reports'));
-router.use('/settings',   stub('Settings'));
+router.use('/settings',   settingsRouter);
 
 export default router;
