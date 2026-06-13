@@ -13,6 +13,7 @@
 import { Router } from 'express';
 import authRouter       from './auth.routes.js';
 import categoriesRouter from './categories.routes.js';
+import productsRouter   from './products.routes.js';
 
 const router = Router();
 
@@ -37,7 +38,7 @@ router.use('/auth',       authRouter);
 
 // ─── Feature stubs — replace stub() with real router as each module is built ──
 
-router.use('/products',   stub('Products'));
+router.use('/products',   productsRouter);
 router.use('/categories', categoriesRouter);
 router.use('/floors',     stub('Floors'));
 router.use('/tables',     stub('Tables'));
