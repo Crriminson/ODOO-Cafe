@@ -1,53 +1,18 @@
-import { useNavigate } from 'react-router-dom';
-import Button from '../shared/components/Button';
-import Card from '../shared/components/Card';
-import { useAuth } from '../shared/hooks/useAuth';
-
-const cards = [
-  {
-    title: 'Take orders',
-    body: 'Cashier and floor workflows can live behind the employee role guard.'
-  },
-  {
-    title: 'Open sessions',
-    body: 'Authenticated access is ready for session-based POS operations and later data fetching.'
-  }
-];
+import { Route, Routes } from 'react-router-dom';
 
 export default function PosRoutes() {
-  const navigate = useNavigate();
-  const { logout, user } = useAuth();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login', { replace: true });
-  };
-
   return (
-    <div className="shell">
-      <header className="nav">
-        <div>
-          <p className="eyebrow">POS</p>
-          <h1 className="card-title" style={{ fontSize: '1.6rem', margin: 0 }}>
-            Hello, {user?.name}
-          </h1>
-        </div>
-        <div className="nav-links">
-          <span className="nav-chip">Role: {user?.role}</span>
-          <Button className="button-secondary" onClick={handleLogout}>
-            Log out
-          </Button>
-        </div>
-      </header>
+    <Routes>
+      {/* Active placeholder — keeps /pos from rendering blank */}
+      <Route path="/" element={<div className="text-sm text-[#6B7280]">POS Order coming soon</div>} />
 
-      <div className="dashboard-grid">
-        {cards.map((card) => (
-          <Card key={card.title}>
-            <h2 className="card-title">{card.title}</h2>
-            <p className="card-copy">{card.body}</p>
-          </Card>
-        ))}
-      </div>
-    </div>
+      {/* === Session / Order Type / Floor Popup / Table View / Order View / Orders — owner: P3 === */}
+      {/* <Route path="/" element={<OrderView />} /> */}
+      {/* <Route path="/orders" element={<Orders />} /> */}
+      {/* <Route path="/tables" element={<TableView />} /> */}
+
+      {/* === Customers — owner: P4 === */}
+      {/* <Route path="/customers" element={<Customers />} /> */}
+    </Routes>
   );
 }

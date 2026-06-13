@@ -1,32 +1,31 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+import axios from 'axios';
 
-const parseResponse = async (response) => {
-  const contentType = response.headers.get('content-type') || '';
-  const isJson = contentType.includes('application/json');
-  const payload = isJson ? await response.json() : null;
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1',
+  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true
+});
 
-  if (!response.ok) {
-    const errorMessage = payload?.error || payload?.message || 'Request failed';
-    throw new Error(errorMessage);
+api.interceptors.response.use(
+  (response) => response.data,
+  (err) => {
+    const serverError = err?.response?.data?.error;
+    const message = serverError?.message || err.message || 'Network error';
+    const code = serverError?.code || 'NETWORK_ERROR';
+    const fields = serverError?.fields || null;
+    const status = err?.response?.status || 0;
+
+    const error = new Error(message);
+    error.code = code;
+    error.fields = fields;
+    error.status = status;
+
+    if (status === 401) {
+      window.location.href = '/login';
+    }
+
+    return Promise.reject(error);
   }
+);
 
-  return payload;
-};
-
-export const request = async (path, options = {}) => {
-  const { body, headers, ...rest } = options;
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: 'include',
-    headers: {
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-      ...(headers || {})
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    ...rest
-  });
-
-  return parseResponse(response);
-};
-
-export { API_BASE_URL };
+export default api;

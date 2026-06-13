@@ -1,7 +1,9 @@
 # ── Dependencies ────────────────────────────────────────────────────────────
 node_modules/
+server/node_modules/
+client/node_modules/
 
-# ── Environment / secrets ────────────────────────────────────────────────────
+# ── Environment / secrets (NEVER commit these) ───────────────────────────────
 .env
 server/.env
 client/.env
@@ -20,11 +22,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# ── Vite / React cache ───────────────────────────────────────────────────────
+# ── Vite cache ───────────────────────────────────────────────────────────────
 client/.vite/
-client/node_modules/
 
-# ── OS generated ──────────────────────────────────────────────────────────────
+# ── OS generated ─────────────────────────────────────────────────────────────
 .DS_Store
 .DS_Store?
 Thumbs.db
@@ -33,13 +34,13 @@ ehthumbs.db
 .Spotlight-V100
 .Trashes
 
-# ── Editor ────────────────────────────────────────────────────────────────────
+# ── Editor ───────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# ── Docker volumes / data ─────────────────────────────────────────────────────
+# ── Docker volumes ───────────────────────────────────────────────────────────
 postgres_data/
 
 # ── Test / coverage ───────────────────────────────────────────────────────────

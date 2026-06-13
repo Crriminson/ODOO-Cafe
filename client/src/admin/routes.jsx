@@ -1,53 +1,30 @@
-import { useNavigate } from 'react-router-dom';
-import Button from '../shared/components/Button';
-import Card from '../shared/components/Card';
-import { useAuth } from '../shared/hooks/useAuth';
-
-const cards = [
-  {
-    title: 'Daily operations',
-    body: 'Manage products, staff, coupons, reports, and settings from a single authenticated dashboard.'
-  },
-  {
-    title: 'Role guard',
-    body: 'This surface is only reachable by authenticated admin users with a valid JWT cookie.'
-  }
-];
+import { Route, Routes } from 'react-router-dom';
 
 export default function AdminRoutes() {
-  const navigate = useNavigate();
-  const { logout, user } = useAuth();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login', { replace: true });
-  };
-
   return (
-    <div className="shell">
-      <header className="nav">
-        <div>
-          <p className="eyebrow">Admin</p>
-          <h1 className="card-title" style={{ fontSize: '1.6rem', margin: 0 }}>
-            Welcome, {user?.name}
-          </h1>
-        </div>
-        <div className="nav-links">
-          <span className="nav-chip">Role: {user?.role}</span>
-          <Button className="button-secondary" onClick={handleLogout}>
-            Log out
-          </Button>
-        </div>
-      </header>
+    <Routes>
+      {/* Active placeholder — keeps /admin from rendering blank */}
+      <Route path="/" element={<div className="text-sm text-[#6B7280]">Dashboard coming soon</div>} />
 
-      <div className="dashboard-grid">
-        {cards.map((card) => (
-          <Card key={card.title}>
-            <h2 className="card-title">{card.title}</h2>
-            <p className="card-copy">{card.body}</p>
-          </Card>
-        ))}
-      </div>
-    </div>
+      {/* === Dashboard / Reports — owner: round 2 === */}
+      {/* <Route path="/" element={<Dashboard />} /> */}
+      {/* <Route path="/reports" element={<Reports />} /> */}
+
+      {/* === Products & Categories — owner: P2 === */}
+      {/* <Route path="/products" element={<Products />} /> */}
+      {/* <Route path="/categories" element={<Categories />} /> */}
+
+      {/* === Payment Methods & Floors/Tables — owner: P2 === */}
+      {/* <Route path="/payment-methods" element={<PaymentMethods />} /> */}
+      {/* <Route path="/floors-tables" element={<FloorsAndTables />} /> */}
+
+      {/* === Cooks & Coupons/Promotions — owner: P4 === */}
+      {/* <Route path="/cooks" element={<Cooks />} /> */}
+      {/* <Route path="/coupons-promotions" element={<CouponsPromotions />} /> */}
+
+      {/* === Employees & Settings — owner: round 2 === */}
+      {/* <Route path="/employees" element={<Employees />} /> */}
+      {/* <Route path="/settings" element={<Settings />} /> */}
+    </Routes>
   );
 }

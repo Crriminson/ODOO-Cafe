@@ -1,127 +1,205 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Card from '../shared/components/Card';
-import Button from '../shared/components/Button';
-import { useAuth } from '../shared/hooks/useAuth';
-import { AUTH_ROLES } from '../shared/constants';
+import { Coffee, Loader2 } from 'lucide-react';
+import { useAuth } from '@/shared/hooks/useAuth';
+import { ROLES } from '@/shared/constants';
+
+const getHomeRoute = (role) => (role === ROLES.ADMIN ? '/admin' : '/pos');
 
 export default function SignupPage() {
-	const navigate = useNavigate();
-	const { signup } = useAuth();
-	const [form, setForm] = useState({ name: '', email: '', password: '', role: AUTH_ROLES[1] });
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState('');
-	const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
+  const { signup } = useAuth();
 
-	const handleSubmit = async (event) => {
-		event.preventDefault();
-		setLoading(true);
-		setError('');
-		setSuccess('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState(ROLES.EMPLOYEE);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-		try {
-			await signup(form);
-			setSuccess('Account created. You can sign in now.');
-			navigate('/login', { replace: true });
-		} catch (submitError) {
-			setError(submitError.message || 'Unable to create the account');
-		} finally {
-			setLoading(false);
-		}
-	};
+  const nameInvalid = error && !name;
+  const emailInvalid = error && !email;
+  const passwordInvalid = error && !password;
 
-	return (
-		<div className="screen">
-			<div className="shell auth-grid">
-				<div className="stack stack-large">
-					<div>
-						<p className="eyebrow">Odoo Cafe</p>
-						<h1 className="title">Create staff access in minutes.</h1>
-						<p className="lead">
-							Admin and employee accounts are controlled by the server JWT flow and checked on every protected request.
-						</p>
-					</div>
-					<Card>
-						<p className="card-title">What this enables</p>
-						<p className="card-copy">Admins get access to management surfaces. Employees land in the POS flow. Kitchen display remains public.</p>
-					</Card>
-				</div>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    try {
+      await signup(name, email, password, role);
+      const { user } = await import('@/shared/stores/useAuthStore').then(
+        (m) => ({ user: m.useAuthStore.getState().user })
+      );
+      navigate(getHomeRoute(user?.role), { replace: true });
+    } catch (err) {
+      setError(err.message || 'Unable to create account');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-				<Card>
-					<form className="form" onSubmit={handleSubmit}>
-						<div>
-							<p className="eyebrow">Sign up</p>
-							<h2 className="card-title">New account</h2>
-						</div>
+  return (
+    <div className="min-h-screen bg-[#F5F0E8] flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-[420px]">
+        {/* Card */}
+        <div
+          className="bg-white border-2 border-[#1A1A1A] rounded-2xl p-8"
+          style={{ boxShadow: '6px 6px 0px #1A1A1A' }}
+        >
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-1">
+            <div
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#F5C142] border-2 border-[#1A1A1A] shrink-0"
+              style={{ boxShadow: '2px 2px 0px #1A1A1A' }}
+            >
+              <Coffee size={18} strokeWidth={2.5} className="text-[#1A1A1A]" />
+            </div>
+            <h1 className="text-[1.5rem] font-black text-[#1A1A1A] leading-none">
+              Sign Up
+            </h1>
+          </div>
+          <p className="text-sm text-[#6B7280] mb-7">Create your staff account</p>
 
-						<label className="field">
-							<span className="label">Name</span>
-							<input
-								className="input"
-								type="text"
-								value={form.name}
-								onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-								placeholder="Asha Patel"
-								autoComplete="name"
-								required
-							/>
-						</label>
+          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+            {/* Name */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="signup-name"
+                className="text-xs font-bold uppercase tracking-widest text-[#1A1A1A]"
+              >
+                Name <span className="text-[#EF4444]">*</span>
+              </label>
+              <input
+                id="signup-name"
+                type="text"
+                autoComplete="name"
+                required
+                aria-required="true"
+                aria-invalid={nameInvalid || undefined}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Asha Patel"
+                className={`w-full px-3.5 py-2.5 rounded-lg border-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none transition-colors
+                  ${nameInvalid
+                    ? 'border-[#EF4444] focus:border-[#EF4444]'
+                    : 'border-[#E5E7EB] focus:border-[#1A1A1A]'
+                  }`}
+              />
+              {nameInvalid && (
+                <p className="text-xs text-[#EF4444]">Name is required</p>
+              )}
+            </div>
 
-						<label className="field">
-							<span className="label">Email</span>
-							<input
-								className="input"
-								type="email"
-								value={form.email}
-								onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-								placeholder="name@odoo-cafe.com"
-								autoComplete="email"
-								required
-							/>
-						</label>
+            {/* Email */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="signup-email"
+                className="text-xs font-bold uppercase tracking-widest text-[#1A1A1A]"
+              >
+                Email <span className="text-[#EF4444]">*</span>
+              </label>
+              <input
+                id="signup-email"
+                type="email"
+                autoComplete="email"
+                required
+                aria-required="true"
+                aria-invalid={emailInvalid || undefined}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@odoo-cafe.com"
+                className={`w-full px-3.5 py-2.5 rounded-lg border-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none transition-colors
+                  ${emailInvalid
+                    ? 'border-[#EF4444] focus:border-[#EF4444]'
+                    : 'border-[#E5E7EB] focus:border-[#1A1A1A]'
+                  }`}
+              />
+              {emailInvalid && (
+                <p className="text-xs text-[#EF4444]">Email is required</p>
+              )}
+            </div>
 
-						<label className="field">
-							<span className="label">Password</span>
-							<input
-								className="input"
-								type="password"
-								value={form.password}
-								onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-								placeholder="At least 8 characters"
-								autoComplete="new-password"
-								minLength="8"
-								required
-							/>
-						</label>
+            {/* Password */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="signup-password"
+                className="text-xs font-bold uppercase tracking-widest text-[#1A1A1A]"
+              >
+                Password <span className="text-[#EF4444]">*</span>
+              </label>
+              <input
+                id="signup-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                aria-required="true"
+                aria-invalid={passwordInvalid || undefined}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className={`w-full px-3.5 py-2.5 rounded-lg border-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none transition-colors
+                  ${passwordInvalid
+                    ? 'border-[#EF4444] focus:border-[#EF4444]'
+                    : 'border-[#E5E7EB] focus:border-[#1A1A1A]'
+                  }`}
+              />
+              {passwordInvalid && (
+                <p className="text-xs text-[#EF4444]">Password is required</p>
+              )}
+            </div>
 
-						<label className="field">
-							<span className="label">Role</span>
-							<select
-								className="select"
-								value={form.role}
-								onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}
-							>
-								{AUTH_ROLES.map((role) => (
-									<option key={role} value={role}>
-										{role}
-									</option>
-								))}
-							</select>
-						</label>
+            {/* Role */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="signup-role"
+                className="text-xs font-bold uppercase tracking-widest text-[#1A1A1A]"
+              >
+                Role <span className="text-[#EF4444]">*</span>
+              </label>
+              <select
+                id="signup-role"
+                required
+                aria-required="true"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-lg border-2 border-[#E5E7EB] focus:border-[#1A1A1A] text-sm text-[#1A1A1A] outline-none transition-colors bg-white"
+              >
+                <option value={ROLES.EMPLOYEE}>Employee</option>
+                <option value={ROLES.ADMIN}>Admin</option>
+              </select>
+            </div>
 
-						{error ? <p className="error">{error}</p> : null}
-						{success ? <p className="success">{success}</p> : null}
+            {/* API Error Banner */}
+            {error && (
+              <div className="bg-[#FEF2F2] border-2 border-[#EF4444] rounded-lg p-3 text-sm text-[#EF4444]">
+                {error}
+              </div>
+            )}
 
-						<Button className="button-primary" type="submit" disabled={loading}>
-							{loading ? 'Creating account...' : 'Create account'}
-						</Button>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-[#F5C142] text-[#1A1A1A] font-black text-sm rounded-lg px-4 py-3 border-2 border-[#1A1A1A] hover:bg-[#E0AE30] transition-colors flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{ boxShadow: '3px 3px 0px #1A1A1A' }}
+            >
+              {isLoading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                'Create Account'
+              )}
+            </button>
+          </form>
 
-						<p className="muted" style={{ margin: 0 }}>
-							Already have access? <Link to="/login">Sign in</Link>
-						</p>
-					</form>
-				</Card>
-			</div>
-		</div>
-	);
+          {/* Footer */}
+          <p className="mt-6 text-sm text-center text-[#6B7280]">
+            Already have an account?{' '}
+            <Link to="/login" className="text-[#1A1A1A] font-bold underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }

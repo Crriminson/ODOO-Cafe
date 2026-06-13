@@ -1,19 +1,13 @@
-import Card from '../shared/components/Card';
+import { Route, Routes } from 'react-router-dom';
 
 export default function KdsRoutes() {
   return (
-    <div className="screen">
-      <div className="shell">
-        <Card>
-          <p className="eyebrow">KDS</p>
-          <h1 className="title" style={{ fontSize: '2.2rem' }}>
-            Kitchen display is open by design.
-          </h1>
-          <p className="lead">
-            This route intentionally stays accessible without authentication for the live kitchen screen.
-          </p>
-        </Card>
-      </div>
-    </div>
+    <Routes>
+      {/* Active placeholder — keeps /kds from rendering blank */}
+      <Route path="/" element={<div className="text-sm text-[#6B7280]">KDS coming soon</div>} />
+
+      {/* === Kitchen Display — owner: P4 === */}
+      {/* <Route path="/" element={<KitchenDisplay />} /> */}
+    </Routes>
   );
 }
