@@ -5,17 +5,17 @@
 --               cashier@odoocafe.com / admin123
 -- ============================================================
 
--- Clean existing data in FK-safe order
+-- Clean existing data in FK-safe order, reset sequences
 TRUNCATE cook_category_preferences, cooks, payments, order_discounts,
          order_items, orders, sessions, loyalty_transactions, customers,
          tables, floors, products, categories, users, coupons, promotions
-CASCADE;
+RESTART IDENTITY CASCADE;
 
 -- ── 1. Users ──────────────────────────────────────────────────────────────────
 -- password_hash is bcrypt of 'admin123' (cost 10)
 INSERT INTO users (name, email, password_hash, role, is_active) VALUES
-    ('Cafe Admin',   'admin@odoocafe.com',   '$2a$10$tMh4E/P.w/Z/HlyfA8n4tOVzO3e5wG9j8Lp9fPzVnU3D0C7v6R4/O', 'admin',    TRUE),
-    ('Cafe Cashier', 'cashier@odoocafe.com', '$2a$10$tMh4E/P.w/Z/HlyfA8n4tOVzO3e5wG9j8Lp9fPzVnU3D0C7v6R4/O', 'employee', TRUE);
+    ('Cafe Admin',   'admin@odoocafe.com',   '$2a$10$xbDQKSco4pS3CLAU.SZa3.0eKd0z5N3pEXQ67H4DN7/XC4GW2vNl2', 'admin',    TRUE),
+    ('Cafe Cashier', 'cashier@odoocafe.com', '$2a$10$xbDQKSco4pS3CLAU.SZa3.0eKd0z5N3pEXQ67H4DN7/XC4GW2vNl2', 'employee', TRUE);
 
 -- ── 2. Categories ─────────────────────────────────────────────────────────────
 INSERT INTO categories (name, color) VALUES
