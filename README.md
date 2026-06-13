@@ -54,14 +54,11 @@ cp .env.example server/.env
 Edit `server/.env`:
 
 ```env
+DATABASE_URL=postgres://postgres:your_password@localhost:5432/odoocafe
+JWT_SECRET=change_me_to_something_long_and_random_at_least_32_chars
 PORT=5000
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_NAME=odoocafe
-JWT_SECRET=change_me_to_something_secret
-JWT_EXPIRES_IN=1d
+CLIENT_URL=http://localhost:5173
+NODE_ENV=development
 ```
 
 ### 2. Run migrations + seed
@@ -106,18 +103,6 @@ npm run dev       # Vite, port 5173
 
 ---
 
-## Docker (optional)
-
-If you don't want to install PostgreSQL locally, a `docker-compose.yml` is provided:
-
-```bash
-docker compose up -d   # starts Postgres 16 on port 5432
-```
-
-Then run migrations as normal. Stop with `docker compose down`.
-
----
-
 ## Branch Strategy
 
 - `master` — stable, always deployable
@@ -143,3 +128,95 @@ Then run migrations as normal. Stop with `docker compose down`.
 
 - [`docs/Spec-Sheet.md`](docs/spec-sheet.md) — full feature spec, schema, API structure, flows
 - [`docs/guidelines-design.md`](docs/guidelines-design.md) — design system, component patterns, tokens
+
+---
+
+## Running the Backend
+
+### Prerequisites
+- Node.js 20+
+- PostgreSQL 16 running locally (default port 5432)
+
+### Setup
+
+```bash
+cd server
+npm install
+```
+
+Copy and fill in env file:
+
+```bash
+cp .env.example .env
+# edit .env — set DATABASE_URL and JWT_SECRET at minimum
+```
+
+```env
+DATABASE_URL=postgres://postgres:your_password@localhost:5432/odoocafe
+JWT_SECRET=change_me_to_something_long_and_random_at_least_32_chars
+PORT=5000
+CLIENT_URL=http://localhost:5173
+```
+
+Run migrations (creates the DB if it doesn't exist, applies all 10 schema files):
+
+```bash
+npm run migrate
+```
+
+Seed with demo data (1 admin, 1 cashier, 4 categories, 8 products, 1 floor, 4 tables):
+
+```bash
+npm run seed
+```
+
+Start dev server with hot reload:
+
+```bash
+npm run dev
+```
+
+Server starts at `http://localhost:5000`.
+
+### API Endpoints
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/v1/health` | None | Health check — `{ status, db }` |
+| `POST` | `/api/v1/auth/signup` | None | Create account |
+| `POST` | `/api/v1/auth/login` | None | Login → JWT (12h) |
+| `POST` | `/api/v1/auth/logout` | Bearer | Acknowledge logout |
+| `GET` | `/api/v1/auth/me` | Bearer | Current user profile |
+| `*` | `/api/v1/<feature>/*` | — | 501 Not Implemented (stub) |
+
+### Error Response Shape
+
+All errors use a consistent envelope:
+
+```json
+{
+  "error": {
+    "message": "Human-readable description",
+    "code": "MACHINE_READABLE_CODE"
+  }
+}
+```
+
+Validation errors (422) also include `fields`:
+
+```json
+{
+  "error": {
+    "message": "Validation failed",
+    "code": "VALIDATION_ERROR",
+    "fields": [{ "field": "email", "message": "Invalid email address" }]
+  }
+}
+```
+
+### Seed Credentials
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@odoocafe.com | admin123 |
+| Cashier | cashier@odoocafe.com | admin123 |
