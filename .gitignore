@@ -1,31 +1,42 @@
-# ── Dependencies ────────────────────────────────────────────────────────────
+# ── Dependencies ─────────────────────────────────────────────────────────────
 node_modules/
 server/node_modules/
 client/node_modules/
+shared/node_modules/
 
 # ── Environment / secrets (NEVER commit these) ───────────────────────────────
 .env
+.env.*
+!.env.example          # keep example templates
 server/.env
+server/.env.*
+!server/.env.example
 client/.env
+client/.env.*
+!client/.env.example
 client/.env.local
 client/.env.production
 
-# ── Build outputs ────────────────────────────────────────────────────────────
+# ── Build outputs ─────────────────────────────────────────────────────────────
 dist/
 build/
 client/dist/
+server/dist/
 
-# ── Logs ─────────────────────────────────────────────────────────────────────
+# ── Logs ──────────────────────────────────────────────────────────────────────
 *.log
+logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# ── Vite cache ───────────────────────────────────────────────────────────────
+# ── Vite / bundler caches ────────────────────────────────────────────────────
 client/.vite/
+.vite/
+**/.cache/
 
-# ── OS generated ─────────────────────────────────────────────────────────────
+# ── OS generated ──────────────────────────────────────────────────────────────
 .DS_Store
 .DS_Store?
 Thumbs.db
@@ -33,16 +44,27 @@ ehthumbs.db
 ._*
 .Spotlight-V100
 .Trashes
+Desktop.ini
 
 # ── Editor ───────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
+*.suo
+*.user
+.history/
 
-# ── Docker volumes ───────────────────────────────────────────────────────────
+# ── Docker volumes & runtime data ────────────────────────────────────────────
 postgres_data/
+*.pid
 
-# ── Test / coverage ───────────────────────────────────────────────────────────
+# ── Test / coverage ──────────────────────────────────────────────────────────
 coverage/
 .nyc_output/
+server/coverage/
+client/coverage/
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.tsbuildinfo
+.eslintcache
