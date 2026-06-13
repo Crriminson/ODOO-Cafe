@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }) => {
 
 	const login = async (credentials) => {
 		const response = await loginRequest(credentials);
+		if (response.token) localStorage.setItem('token', response.token);
 		setUser(response.user ?? null);
 		return response.user;
 	};
@@ -35,6 +36,7 @@ export const AuthProvider = ({ children }) => {
 
 	const logout = async () => {
 		await logoutRequest();
+		localStorage.removeItem('token');
 		setUser(null);
 	};
 
