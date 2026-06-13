@@ -1,209 +1,278 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Loader2, ArrowRight, Coffee, LayoutDashboard, MonitorSmartphone, ChefHat } from 'lucide-react';
 import { useAuth } from '../shared/hooks/useAuth';
 import { AUTH_ROLES } from '../shared/constants';
 
-const inputStyle = {
-  borderColor: '#E5E7EB',
-  color: '#1A1A1A',
+const ROLES_META = {
+  admin:    { label: 'Admin',    desc: 'Full dashboard access' },
+  employee: { label: 'Employee', desc: 'POS terminal access' },
 };
 
-export default function SignupPage() {
-  const navigate = useNavigate();
-  const { signup } = useAuth();
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: AUTH_ROLES[1] });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+const HIGHLIGHTS = [
+  { icon: LayoutDashboard, text: 'Admin dashboard & reports' },
+  { icon: MonitorSmartphone, text: 'POS terminal for cashiers' },
+  { icon: ChefHat, text: 'Kitchen display system' },
+];
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+export default function SignupPage() {
+  const navigate   = useNavigate();
+  const { signup } = useAuth();
+  const [form,    setForm]    = useState({ name: '', email: '', password: '', role: AUTH_ROLES[1] });
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setLoading(true);
     setError('');
     try {
       await signup(form);
       navigate('/login', { replace: true });
-    } catch (submitError) {
-      setError(submitError.message || 'Unable to create the account');
+    } catch (err) {
+      setError(err.message || 'Unable to create account');
     } finally {
       setLoading(false);
     }
   };
 
-  const fieldCls = 'border-2 rounded-lg px-3 py-2.5 text-sm w-full bg-white transition-colors duration-150 focus:outline-none';
-  const labelCls = 'text-xs font-bold uppercase tracking-widest';
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const inputCls = 'border-2 rounded-xl px-4 py-3 text-sm w-full bg-white focus:outline-none transition-colors duration-150';
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4"
-         style={{ background: 'var(--color-canvas)' }}>
-      <div className="w-full max-w-[420px] space-y-6">
+    <div className="min-h-screen flex" style={{ background: 'var(--color-canvas)' }}>
 
-        {/* Brand mark */}
+      {/* ── LEFT PANEL ────────────────────────────────────────────── */}
+      <div className="hidden lg:flex lg:w-[480px] xl:w-[540px] flex-col justify-between p-12 flex-shrink-0"
+           style={{ background: '#1A1A1A' }}>
+
+        {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center border-2 flex-shrink-0"
-               style={{ background: '#F5C142', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
-            <span className="text-sm font-black" style={{ color: '#1A1A1A' }}>☕</span>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+               style={{ background: '#F5C142', boxShadow: 'var(--shadow-md)' }}>
+            <Coffee size={20} strokeWidth={2.5} style={{ color: '#1A1A1A' }} />
           </div>
-          <span className="text-[1.5rem] font-black leading-tight" style={{ color: '#1A1A1A' }}>
-            Odoo Cafe POS
-          </span>
+          <span className="text-xl font-black text-white tracking-tight">Odoo Cafe</span>
         </div>
 
-        {/* Auth card */}
-        <div className="bg-white rounded-2xl p-8 border-2"
-             style={{ borderColor: '#1A1A1A', boxShadow: 'var(--shadow-xl)' }}>
+        {/* Hero */}
+        <div className="space-y-8">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest mb-3"
+               style={{ color: '#F5C142' }}>Get started</p>
+            <h1 className="text-4xl xl:text-5xl font-black text-white leading-tight">
+              Join the team.<br />Hit the ground<br />running.
+            </h1>
+            <p className="mt-4 text-base leading-relaxed" style={{ color: '#9CA3AF' }}>
+              One account gives you access to the right tools for your role — no configuration needed.
+            </p>
+          </div>
+
+          <ul className="space-y-4">
+            {HIGHLIGHTS.map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                     style={{ background: 'rgba(245,193,66,0.12)', border: '1px solid rgba(245,193,66,0.25)' }}>
+                  <Icon size={15} strokeWidth={2} style={{ color: '#F5C142' }} />
+                </div>
+                <span className="text-sm font-medium" style={{ color: '#D1D5DB' }}>{text}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="flex gap-2">
+            <div className="h-1 w-12 rounded-full" style={{ background: '#F5C142' }} />
+            <div className="h-1 w-6 rounded-full" style={{ background: 'rgba(245,193,66,0.3)' }} />
+            <div className="h-1 w-3 rounded-full" style={{ background: 'rgba(245,193,66,0.15)' }} />
+          </div>
+        </div>
+
+        <p className="text-xs" style={{ color: '#6B7280' }}>
+          © {new Date().getFullYear()} Odoo Cafe POS · All rights reserved
+        </p>
+      </div>
+
+      {/* ── RIGHT PANEL ───────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12">
+
+        {/* Mobile logo */}
+        <div className="flex items-center gap-2 mb-8 lg:hidden">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+               style={{ background: '#F5C142', boxShadow: 'var(--shadow-md)' }}>
+            <Coffee size={18} strokeWidth={2.5} style={{ color: '#1A1A1A' }} />
+          </div>
+          <span className="text-lg font-black" style={{ color: '#1A1A1A' }}>Odoo Cafe</span>
+        </div>
+
+        <div className="w-full max-w-[400px]">
 
           {/* Heading */}
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center border-2 flex-shrink-0"
-                 style={{ background: '#F5C142', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
-              <UserPlus size={18} strokeWidth={2.5} style={{ color: '#1A1A1A' }} />
-            </div>
-            <h1 className="text-[1.5rem] font-black leading-tight" style={{ color: '#1A1A1A' }}>
-              New account
-            </h1>
+          <div className="mb-8">
+            <h2 className="text-3xl font-black leading-tight" style={{ color: '#1A1A1A' }}>
+              Create account
+            </h2>
+            <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>
+              Set up your staff access in seconds.
+            </p>
           </div>
-          <p className="text-sm mb-6 ml-12" style={{ color: '#6B7280' }}>
-            Create staff access for admin or employee.
-          </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {/* Card */}
+          <div className="bg-white rounded-2xl p-8 border-2"
+               style={{ borderColor: '#1A1A1A', boxShadow: 'var(--shadow-xl)' }}>
 
-            {/* Name + Role row */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1">
-                <label htmlFor="signup-name" className={labelCls} style={{ color: '#1A1A1A' }}>
-                  Name <span aria-hidden="true">*</span>
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+
+              {/* Name */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="signup-name"
+                       className="text-xs font-bold uppercase tracking-widest"
+                       style={{ color: '#1A1A1A' }}>
+                  Full name
                 </label>
                 <input
                   id="signup-name"
                   type="text"
                   value={form.name}
-                  onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))}
+                  onChange={set('name')}
                   placeholder="Asha Patel"
                   autoComplete="name"
                   required
                   aria-required="true"
-                  className={fieldCls}
-                  style={inputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
-                  onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}
+                  className={inputCls}
+                  style={{ borderColor: '#E5E7EB', color: '#1A1A1A' }}
+                  onFocus={(e) => { e.target.style.borderColor = '#1A1A1A'; }}
+                  onBlur={(e)  => { e.target.style.borderColor = '#E5E7EB'; }}
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label htmlFor="signup-role" className={labelCls} style={{ color: '#1A1A1A' }}>
-                  Role <span aria-hidden="true">*</span>
+              {/* Email */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="signup-email"
+                       className="text-xs font-bold uppercase tracking-widest"
+                       style={{ color: '#1A1A1A' }}>
+                  Email address
                 </label>
-                <select
-                  id="signup-role"
-                  value={form.role}
-                  onChange={(e) => setForm((c) => ({ ...c, role: e.target.value }))}
+                <input
+                  id="signup-email"
+                  type="email"
+                  value={form.email}
+                  onChange={set('email')}
+                  placeholder="name@odoo-cafe.com"
+                  autoComplete="email"
                   required
                   aria-required="true"
-                  className={fieldCls}
-                  style={inputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
-                  onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}
-                >
-                  {AUTH_ROLES.map((role) => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
-                </select>
+                  className={inputCls}
+                  style={{ borderColor: '#E5E7EB', color: '#1A1A1A' }}
+                  onFocus={(e) => { e.target.style.borderColor = '#1A1A1A'; }}
+                  onBlur={(e)  => { e.target.style.borderColor = '#E5E7EB'; }}
+                />
               </div>
-            </div>
 
-            {/* Email */}
-            <div className="flex flex-col gap-1">
-              <label htmlFor="signup-email" className={labelCls} style={{ color: '#1A1A1A' }}>
-                Email <span aria-hidden="true">*</span>
-              </label>
-              <input
-                id="signup-email"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm((c) => ({ ...c, email: e.target.value }))}
-                placeholder="name@odoo-cafe.com"
-                autoComplete="email"
-                required
-                aria-required="true"
-                className={fieldCls}
-                style={inputStyle}
-                onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
-                onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}
-              />
-            </div>
-
-            {/* Password */}
-            <div className="flex flex-col gap-1">
-              <label htmlFor="signup-password" className={labelCls} style={{ color: '#1A1A1A' }}>
-                Password <span aria-hidden="true">*</span>
-              </label>
-              <input
-                id="signup-password"
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm((c) => ({ ...c, password: e.target.value }))}
-                placeholder="At least 6 characters"
-                autoComplete="new-password"
-                minLength="6"
-                required
-                aria-required="true"
-                className={fieldCls}
-                style={inputStyle}
-                onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
-                onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}
-              />
-            </div>
-
-            {/* API error banner */}
-            {error && (
-              <div className="border-2 rounded-lg px-3 py-2.5 text-sm"
-                   style={{ background: '#FEF2F2', borderColor: '#EF4444', color: '#EF4444' }}
-                   role="alert">
-                {error}
+              {/* Password */}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="signup-password"
+                       className="text-xs font-bold uppercase tracking-widest"
+                       style={{ color: '#1A1A1A' }}>
+                  Password
+                </label>
+                <input
+                  id="signup-password"
+                  type="password"
+                  value={form.password}
+                  onChange={set('password')}
+                  placeholder="At least 6 characters"
+                  autoComplete="new-password"
+                  minLength="6"
+                  required
+                  aria-required="true"
+                  className={inputCls}
+                  style={{ borderColor: '#E5E7EB', color: '#1A1A1A' }}
+                  onFocus={(e) => { e.target.style.borderColor = '#1A1A1A'; }}
+                  onBlur={(e)  => { e.target.style.borderColor = '#E5E7EB'; }}
+                />
               </div>
-            )}
 
-            {/* CTA */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-black border-2 transition-colors duration-150"
-              style={{
-                background: '#F5C142',
-                borderColor: '#1A1A1A',
-                color: '#1A1A1A',
-                boxShadow: 'var(--shadow-md)',
-                opacity: loading ? 0.7 : 1,
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {loading ? (
-                <><Loader2 size={16} className="animate-spin" /> Creating…</>
-              ) : (
-                'Create account'
+              {/* Role — pill selector */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-bold uppercase tracking-widest"
+                      style={{ color: '#1A1A1A' }}>
+                  Role
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  {AUTH_ROLES.map((role) => {
+                    const meta    = ROLES_META[role] || { label: role, desc: '' };
+                    const active  = form.role === role;
+                    return (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, role }))}
+                        className="flex flex-col items-start px-4 py-3 rounded-xl border-2 text-left transition-colors duration-150"
+                        style={{
+                          background:  active ? '#F5C142' : '#fff',
+                          borderColor: '#1A1A1A',
+                          boxShadow:   active ? 'var(--shadow-sm)' : 'none',
+                        }}
+                      >
+                        <span className="text-xs font-black" style={{ color: '#1A1A1A' }}>{meta.label}</span>
+                        <span className="text-[11px] mt-0.5" style={{ color: active ? '#1A1A1A' : '#9CA3AF' }}>
+                          {meta.desc}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Error */}
+              {error && (
+                <div className="flex items-start gap-2 rounded-xl px-4 py-3 border-2 text-sm"
+                     style={{ background: '#FEF2F2', borderColor: '#EF4444', color: '#EF4444' }}
+                     role="alert">
+                  <span className="mt-px">⚠</span>
+                  <span>{error}</span>
+                </div>
               )}
-            </button>
 
-            <p className="text-sm text-center" style={{ color: '#6B7280' }}>
-              Already have access?{' '}
-              <Link
-                to="/login"
-                className="font-bold underline underline-offset-2 transition-colors duration-150"
-                style={{ color: '#1A1A1A' }}
-                onMouseEnter={(e) => (e.target.style.color = '#F5C142')}
-                onMouseLeave={(e) => (e.target.style.color = '#1A1A1A')}
+              {/* CTA */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-black border-2 transition-colors duration-150"
+                style={{
+                  background:  loading ? '#E0AE30' : '#F5C142',
+                  borderColor: '#1A1A1A',
+                  color:       '#1A1A1A',
+                  boxShadow:   'var(--shadow-md)',
+                  cursor:      loading ? 'not-allowed' : 'pointer',
+                  opacity:     loading ? 0.8 : 1,
+                }}
+                onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = '#E0AE30'; }}
+                onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = '#F5C142'; }}
               >
-                Sign in
-              </Link>
-            </p>
-          </form>
-        </div>
+                {loading
+                  ? <><Loader2 size={16} className="animate-spin" /> Creating account…</>
+                  : <><span>Create account</span> <ArrowRight size={15} strokeWidth={2.5} /></>
+                }
+              </button>
+            </form>
+          </div>
 
-        <p className="text-center text-xs" style={{ color: '#9CA3AF' }}>
-          Odoo Cafe POS · Staff accounts only
-        </p>
+          {/* Footer */}
+          <p className="text-center text-sm mt-6" style={{ color: '#6B7280' }}>
+            Already have access?{' '}
+            <Link
+              to="/login"
+              className="font-bold transition-colors duration-150"
+              style={{ color: '#1A1A1A', textDecorationLine: 'underline', textUnderlineOffset: '3px' }}
+              onMouseEnter={(e) => { e.target.style.color = '#F5C142'; }}
+              onMouseLeave={(e) => { e.target.style.color = '#1A1A1A'; }}
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
