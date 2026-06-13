@@ -8,7 +8,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "migrate": "node src/db/migrate.js",
-    "seed": "node -e \"import('./src/db/migrate.js').then(m => m.runSeeds())\""
+    "seed": "node -e \"import('./src/db/migrate.js').then(m => m.runSeeds())\"",
+    "test": "node --test --test-isolation=none --experimental-test-module-mocks src/db/queries/coupons.queries.test.js src/services/promotion.service.test.js src/services/loyalty.service.test.js src/services/cookAllocation.service.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
