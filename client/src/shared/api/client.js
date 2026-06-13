@@ -16,10 +16,13 @@ const parseResponse = async (response) => {
 export const request = async (path, options = {}) => {
   const { body, headers, ...rest } = options;
 
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
     headers: {
       ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...(headers || {})
     },
     body: body ? JSON.stringify(body) : undefined,
