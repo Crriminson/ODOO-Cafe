@@ -1,0 +1,15 @@
+{
+  "name": "odoo-cafe",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Odoo Cafe POS authentication scaffold",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "migrate": "npm run migrate --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
