@@ -32,5 +32,17 @@ export const loginSchema = z.object({
     .min(1, 'Password is required'),
 });
 
-// ─── Add feature schemas below as modules are implemented ────────────────────
-// export const createProductSchema = z.object({ ... });
+// ─── Categories ──────────────────────────────────────────────────────────────
+
+export const createCategorySchema = z.object({
+  name:  z.string().min(1, 'Name cannot be empty').max(100, 'Name must be 100 characters or fewer'),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Color must be a valid hex code e.g. #FF5733'),
+});
+
+export const updateCategorySchema = z.object({
+  name:  z.string().min(1, 'Name cannot be empty').max(100, 'Name must be 100 characters or fewer').optional(),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Color must be a valid hex code e.g. #FF5733').optional(),
+}).refine(
+  (data) => data.name !== undefined || data.color !== undefined,
+  { message: 'At least one field (name or color) must be provided' }
+);
