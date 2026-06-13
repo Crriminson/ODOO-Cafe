@@ -1,39 +1,36 @@
-/**
- * admin/routes.jsx
- *
- * Each person appends their own route block inside the relevant comment fence.
- * DO NOT touch another person's block.
- *
- * Route ownership:
- *   P1 — Auth / Dashboard / Employees / Cooks / Reports
- *   P2 — Categories / Products / FloorsAndTables / PaymentMethods   ← this file's current scope
- *   P3 — Orders / Customers / Sessions / Coupons / Promotions / KDS
- */
+import { Routes, Route } from 'react-router-dom';
+import AdminLayout from './layout/AdminLayout.jsx';
 
-import { Routes, Route, Navigate } from 'react-router-dom';
+/* === P2-owned imports — do not edit outside P2 block === */
+import Products      from './pages/Products/index.jsx';
+import Categories    from './pages/Categories/index.jsx';
+import PaymentMethods from './pages/PaymentMethods/index.jsx';
+import FloorsAndTables from './pages/FloorsAndTables/index.jsx';
+/* === end P2 block === */
 
-// ─── P2: Catalog & Venue pages ────────────────────────────────────────────────
-import CategoriesPage      from './pages/Categories/index.jsx';
-import ProductsPage        from './pages/Products/index.jsx';
-import FloorsAndTablesPage from './pages/FloorsAndTables/index.jsx';
-import PaymentMethodsPage  from './pages/PaymentMethods/index.jsx';
+const AdminRoutes = () => (
+  <Routes>
+    <Route element={<AdminLayout />}>
 
-/**
- * AdminRoutes — drop this inside <AdminLayout> or the top-level admin router.
- * Each owner adds their <Route> elements inside their own comment block only.
- */
-export default function AdminRoutes() {
-  return (
-    <Routes>
-      {/* ── P2: Catalog & Venue ──────────────────────────────────────────── */}
-      <Route path="categories"      element={<CategoriesPage />} />
-      <Route path="products"        element={<ProductsPage />} />
-      <Route path="floors-tables"   element={<FloorsAndTablesPage />} />
-      <Route path="payment-methods" element={<PaymentMethodsPage />} />
-      {/* ── end P2 ──────────────────────────────────────────────────────── */}
+      {/* === Dashboard — owner: P1 === */}
+      {/* <Route index element={<Dashboard />} /> */}
 
-      {/* Fallback — redirect unknown /admin/* to categories until P1 adds dashboard */}
-      <Route index element={<Navigate to="categories" replace />} />
-    </Routes>
-  );
-}
+      {/* === Products & Categories — owner: P2 === */}
+      <Route path="products"    element={<Products />} />
+      <Route path="categories"  element={<Categories />} />
+
+      {/* === Payment Methods & Floors/Tables — owner: P2 === */}
+      <Route path="payment-methods" element={<PaymentMethods />} />
+      <Route path="floors-tables"   element={<FloorsAndTables />} />
+
+      {/* === Cooks & Coupons/Promotions — owner: P4 === */}
+      {/* <Route path="cooks" element={<Cooks />} /> */}
+      {/* <Route path="coupons-promotions" element={<CouponsPromotions />} /> */}
+
+      {/* === Employees, Reports, Settings — owner: TBD (round 2) === */}
+
+    </Route>
+  </Routes>
+);
+
+export default AdminRoutes;
