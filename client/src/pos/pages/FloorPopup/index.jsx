@@ -5,12 +5,17 @@ import Modal from '../../../shared/components/Modal.jsx';
 import { getFloors } from '../../../shared/api/floors.api.js';
 import useCartStore from '../../../shared/stores/useCartStore.js';
 
-export default function FloorPopup({ isOpen, onClose }) {
+export default function FloorPopup({ isOpen: propIsOpen, onClose: propOnClose }) {
   const navigate = useNavigate();
-  const { setOrderType, setTableId } = useCartStore();
+  const { setOrderType, setTable } = useCartStore();
   const [floors, setFloors] = useState([]);
   const [activeFloorId, setActiveFloorId] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // If rendered as a route, propIsOpen is undefined, so we treat it as open and navigate back on close
+  const isRoute = propIsOpen === undefined;
+  const isOpen = isRoute ? true : propIsOpen;
+  const onClose = isRoute ? () => navigate('/pos/order-type') : propOnClose;
 
   useEffect(() => {
     if (isOpen) {
@@ -33,7 +38,7 @@ export default function FloorPopup({ isOpen, onClose }) {
 
   const handleTableClick = (table) => {
     setOrderType('dine_in');
-    setTableId(table.id);
+    setTable(table.id);
     onClose();
     navigate('/pos/order-view');
   };
@@ -79,7 +84,7 @@ export default function FloorPopup({ isOpen, onClose }) {
                     <p className="table-card-number">T{table.table_number}</p>
                     <p className="table-card-seats">
                       <Users size={14} strokeWidth={2} />
-                      <span>{table.seat_count} {table.seat_count === 1 ? 'seat' : 'seats'}</span>
+                      <span>{table.seats} {table.seats === 1 ? 'seat' : 'seats'}</span>
                     </p>
                     {isOccupied && <span className="table-occupied-dot">●</span>}
                   </button>

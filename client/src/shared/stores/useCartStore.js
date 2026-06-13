@@ -17,6 +17,9 @@ let state = {
   setTableId: (tableId) => {
     updateState({ tableId });
   },
+  setTable: (tableId) => {
+    updateState({ tableId });
+  },
   setItems: (items) => {
     updateState({ items });
   },
@@ -51,6 +54,7 @@ let state = {
           unit_price: product.price,
           quantity: 1,
           line_total: product.price,
+          tax_rate: product.tax_rate,
         },
       ];
     }

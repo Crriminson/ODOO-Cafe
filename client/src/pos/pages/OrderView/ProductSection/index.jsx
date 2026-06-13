@@ -87,38 +87,45 @@ export default function ProductSection() {
 
   useEffect(() => () => clearTimeout(debounceRef.current), []);
 
-  // ─── Load categories + products once ────────────────────────────────
+  // ─── Load categories once ──────────────────────────────────────────
   useEffect(() => {
-    const load = async () => {
+    getCategories()
+      .then((res) => {
+        setCategories(res.categories || []);
+      })
+      .catch((err) => {
+        console.error('[ProductSection] categories load error:', err);
+        setError(err.message || 'Failed to load categories.');
+      });
+  }, []);
+
+  // ─── Load products when category or search changes ──────────────────
+  useEffect(() => {
+    const loadProducts = async () => {
       setLoading(true);
       try {
-        const [catRes, prodRes] = await Promise.all([
-          getCategories(),
-          getProducts({ is_active: true }),
-        ]);
-        setCategories(catRes.categories || []);
+        const params = { is_active: true };
+        if (selectedCategoryId !== 'all') {
+          params.category_id = selectedCategoryId;
+        }
+        if (debouncedQuery.trim()) {
+          params.search = debouncedQuery.trim();
+        }
+        const prodRes = await getProducts(params);
         setProducts(prodRes.products || []);
         setError(null);
       } catch (err) {
-        console.error('[ProductSection] load error:', err);
+        console.error('[ProductSection] products load error:', err);
         setError(err.message || 'Failed to load products. Please refresh.');
       } finally {
         setLoading(false);
       }
     };
-    load();
-  }, []);
+    loadProducts();
+  }, [selectedCategoryId, debouncedQuery]);
 
-  // ─── Client-side filter ──────────────────────────────────────────────
-  const query = debouncedQuery.toLowerCase().trim();
-  const filteredBySearch = query
-    ? products.filter((p) => p.name.toLowerCase().includes(query))
-    : products;
-
-  const displayedProducts =
-    selectedCategoryId === 'all'
-      ? filteredBySearch
-      : filteredBySearch.filter((p) => p.category_id === selectedCategoryId);
+  const displayedProducts = products;
+  const query = debouncedQuery.trim();
 
   // ─── Loading skeleton ────────────────────────────────────────────────
   if (loading) {

@@ -50,6 +50,27 @@ export default function CartSection() {
   const [deleteError, setDeleteError] = useState(null);
 
   const items = currentOrder?.items || [];
+
+  const calculatedSubtotal = items.reduce((sum, item) => {
+    const price = parseFloat(item.unit_price || item.price || 0);
+    const qty = item.quantity || 0;
+    return sum + price * qty;
+  }, 0);
+
+  const calculatedTax = items.reduce((sum, item) => {
+    const price = parseFloat(item.unit_price || item.price || 0);
+    const qty = item.quantity || 0;
+    const rateVal = parseFloat(item.tax_rate || 0);
+    const rate = rateVal < 1 && rateVal > 0 ? rateVal * 100 : rateVal;
+    return sum + (price * qty * rate) / 100;
+  }, 0);
+
+  const calculatedTotal = calculatedSubtotal + calculatedTax;
+
+  const subtotal = currentOrder ? parseFloat(currentOrder.subtotal) : calculatedSubtotal;
+  const tax = currentOrder ? parseFloat(currentOrder.tax_total) : calculatedTax;
+  const total = currentOrder ? parseFloat(currentOrder.total) : calculatedTotal;
+
   const isDraft = currentOrder?.status === 'draft';
   const isSent = currentOrder?.status === 'sent';
 
@@ -372,7 +393,7 @@ export default function CartSection() {
           >
             <span style={{ fontSize: '13px', color: '#6B7280' }}>Subtotal</span>
             <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#1A1A1A' }}>
-              {currentOrder ? formatCurrency(currentOrder.subtotal) : '—'}
+              {formatCurrency(subtotal)}
             </span>
           </div>
           <div
@@ -380,7 +401,7 @@ export default function CartSection() {
           >
             <span style={{ fontSize: '13px', color: '#6B7280' }}>Tax</span>
             <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#1A1A1A' }}>
-              {currentOrder ? formatCurrency(currentOrder.tax_total) : '—'}
+              {formatCurrency(tax)}
             </span>
           </div>
           {currentOrder && parseFloat(currentOrder.discount_total) > 0 && (
@@ -416,7 +437,7 @@ export default function CartSection() {
                 color: '#1A1A1A',
               }}
             >
-              {currentOrder ? formatCurrency(currentOrder.total) : '—'}
+              {formatCurrency(total)}
             </span>
           </div>
         </div>

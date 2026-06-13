@@ -46,7 +46,7 @@ export const getOrderById = async (id, optionalClient) => {
   const items = await q('order_items as oi')
     .join('products as p', 'p.id', 'oi.product_id')
     .where('oi.order_id', id)
-    .select('oi.*', 'p.name as product_name', 'p.category_id')
+    .select('oi.*', 'p.name as product_name', 'p.category_id', q.raw('p.tax_rate::text as tax_rate'))
     .orderBy('oi.id', 'asc');
 
   // 3. Fetch payments

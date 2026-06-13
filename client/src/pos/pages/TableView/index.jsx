@@ -99,7 +99,7 @@ export default function TableView() {
                         <p className="table-card-number">T{table.table_number}</p>
                         <p className="table-card-seats">
                           <Users size={14} strokeWidth={2} />
-                          <span>{table.seat_count} {table.seat_count === 1 ? 'seat' : 'seats'}</span>
+                          <span>{table.seats} {table.seats === 1 ? 'seat' : 'seats'}</span>
                         </p>
                         {table.is_active === false && <span className="table-inactive-badge">Inactive</span>}
                         {table.is_active !== false && isOccupied && <span className="table-occupied-dot">●</span>}
