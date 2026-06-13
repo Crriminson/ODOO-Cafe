@@ -93,3 +93,13 @@ export const updateTableSchema = z.object({
   (data) => Object.keys(data).length > 0,
   { message: 'At least one field must be provided' }
 );
+
+// ─── Settings ───────────────────────────────────────────────────────────────
+
+export const updatePaymentMethodsSchema = z.array(
+  z.object({
+    method:     z.enum(['cash', 'card', 'upi']),
+    is_enabled: z.boolean(),
+    upi_id:     z.string().nullable().optional(),
+  })
+).min(1);

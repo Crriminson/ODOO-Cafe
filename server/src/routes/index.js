@@ -16,6 +16,7 @@ import categoriesRouter from './categories.routes.js';
 import productsRouter   from './products.routes.js';
 import floorsRouter     from './floors.routes.js';
 import tablesRouter     from './tables.routes.js';
+import settingsRouter   from './settings.routes.js';
 
 const router = Router();
 
@@ -53,6 +54,6 @@ router.use('/employees',  stub('Employees'));
 router.use('/cooks',      stub('Cooks'));
 router.use('/kds',        stub('KDS'));
 router.use('/reports',    stub('Reports'));
-router.use('/settings',   stub('Settings'));
+router.use('/settings',   settingsRouter);
 
 export default router;
