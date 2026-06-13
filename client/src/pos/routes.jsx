@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import OrderTypeSelect from './pages/OrderTypeSelect/index.jsx';
 import TableView from './pages/TableView/index.jsx';
 import OrderView from './pages/OrderView/index.jsx';
@@ -7,6 +7,8 @@ import FloorPopup from './pages/FloorPopup/index.jsx';
 export default function PosRoutes() {
   return (
     <Routes>
+      {/* Default: /pos → /pos/order-type */}
+      <Route index element={<Navigate to="order-type" replace />} />
       {/* === P3 routes === */}
       <Route path="order-type" element={<OrderTypeSelect />} />
       <Route path="tables"     element={<TableView />} />

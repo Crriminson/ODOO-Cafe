@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from './layout/AdminLayout.jsx';
 
 /* === P2-owned imports — do not edit outside P2 block === */
@@ -13,7 +13,7 @@ const AdminRoutes = () => (
     <Route element={<AdminLayout />}>
 
       {/* === Dashboard — owner: P1 === */}
-      {/* <Route index element={<Dashboard />} /> */}
+      <Route index element={<Navigate to="products" replace />} />
 
       {/* === Products & Categories — owner: P2 === */}
       <Route path="products"    element={<Products />} />
