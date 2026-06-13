@@ -14,6 +14,8 @@ import { Router } from 'express';
 import authRouter       from './auth.routes.js';
 import categoriesRouter from './categories.routes.js';
 import productsRouter   from './products.routes.js';
+import floorsRouter     from './floors.routes.js';
+import tablesRouter     from './tables.routes.js';
 
 const router = Router();
 
@@ -40,8 +42,8 @@ router.use('/auth',       authRouter);
 
 router.use('/products',   productsRouter);
 router.use('/categories', categoriesRouter);
-router.use('/floors',     stub('Floors'));
-router.use('/tables',     stub('Tables'));
+router.use('/floors',     floorsRouter);
+router.use('/tables',     tablesRouter);
 router.use('/orders',     stub('Orders'));
 router.use('/customers',  stub('Customers'));
 router.use('/sessions',   stub('Sessions'));

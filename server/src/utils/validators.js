@@ -73,3 +73,23 @@ export const updateProductSchema = z.object({
   (data) => Object.keys(data).length > 0,
   { message: 'At least one field must be provided' }
 );
+
+// ─── Floors & Tables ─────────────────────────────────────────────────────────
+
+export const createFloorSchema = z.object({
+  name: z.string().min(1).max(100),
+});
+
+export const createTableSchema = z.object({
+  table_number: z.number().int().positive(),
+  seats:        z.number().int().positive(),
+});
+
+export const updateTableSchema = z.object({
+  table_number: z.number().int().positive().optional(),
+  seats:        z.number().int().positive().optional(),
+  is_active:    z.boolean().optional(),
+}).refine(
+  (data) => Object.keys(data).length > 0,
+  { message: 'At least one field must be provided' }
+);
