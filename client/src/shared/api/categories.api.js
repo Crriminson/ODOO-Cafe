@@ -1,19 +1,19 @@
-import api from './client.js';
+import { request } from './client.js';
 
-export const getCategories = () =>
-  api.get('/categories');
 // Returns: { categories: [{ id, name, color, created_at, updated_at }] }
+export const getCategories = () =>
+  request('/categories');
 
-export const createCategory = (data) =>
-  api.post('/categories', data);
 // Body: { name, color }
 // Returns: { category: {...} }
+export const createCategory = (data) =>
+  request('/categories', { method: 'POST', body: data });
 
-export const updateCategory = (id, data) =>
-  api.put(`/categories/${id}`, data);
 // Body: { name?, color? } — at least one required
 // Returns: { category: {...} }
+export const updateCategory = (id, data) =>
+  request(`/categories/${id}`, { method: 'PUT', body: data });
 
-export const deleteCategory = (id) =>
-  api.delete(`/categories/${id}`);
 // Returns: { message: 'Category deleted successfully' }
+export const deleteCategory = (id) =>
+  request(`/categories/${id}`, { method: 'DELETE' });
