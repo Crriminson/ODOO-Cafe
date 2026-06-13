@@ -1,0 +1,254 @@
+--- PAGE 1 ---
+Odoo Cafe POS 
+Project Overview 
+Build a complete web-based Restaurant Point-of-Sale system. The system has two parts: a 
+Backend where the user (admin) configures products, employees, tables, payment methods, 
+and promotions, and a POS Terminal which the employee uses to take orders, process 
+payments, and manage the floor. The Kitchen Display runs as a separate screen that updates in 
+real time. 
+There are three distinct roles in this system: 
+● User – The admin who logs into the backend to configure and manage everything. 
+● Employee – The cashier who operates the POS terminal to take orders and handle 
+payments. 
+● Customer – A person who visits the cafe and is managed from within the POS terminal 
+by the employee. 
+● User signs up or logs in. On successful login, the POS session opens directly. 
+● Employee sees the Floor pop-up, selects a table, and is taken to the Order View. 
+● Employee picks products, adjusts quantities, applies discounts or coupons, and sends 
+the order to the Kitchen Display. 
+● Kitchen staff moves the order through To Cook, Preparing, and Completed stages. 
+● Employee processes payment via Cash, Card/Digital, or UPI QR. The receipt can be 
+printed or sent via email. 
+● At the end of the shift, the session is closed and the user reviews reports. 
+The backend is accessed by the user (admin) to configure everything before and after POS 
+sessions. The navigation includes Products, Category, Payment Method, Coupon & Promotion, 
+Booking, User/Employee, KDS, Reports and Log-Out. 
+2.1 Login & Signup 
+Signup form fields: Name, Email, Password. 
+Login form fields: Email, Password. 
+1. Application Flow
+2. Backend —  Features to Build
+--- PAGE 2 ---
+On successful login, the POS session opens directly. 
+2.2 Product Management 
+User can create, list, update, and delete products. 
+Product Fields 
+● Name 
+● Category 
+● Price 
+● Unit of Measure (e.g. per piece, per kg, per litre) 
+● Tax 
+● Description 
+The Category field allows picking an existing category or creating a new one on the fly without 
+leaving the product form. 
+2.3 Product Category Management 
+Full create, list, edit, and delete support. 
+Category Fields 
+● Name 
+● Color 
+The color assigned to a category appears everywhere it is used (e.g. product cards in the POS 
+terminal, category filter tabs, and the order view). If the color is updated in the backend, it 
+reflects across all those places automatically. 
+2.4 Payment Method Setup 
+User enables or disables each payment method using a toggle. 
+Supported Methods: 
+● Cash —  Available at checkout when enabled. 
+● Digital/Card —  Represents card and bank payments. 
+● UPI QR —  Requires a UPI ID to be saved (e.g. cafe@ybl). The system generates a QR 
+code from it dynamically at the payment screen. 
+2.5 Floor Plan & Table Management 
+User creates floors and adds tables under each floor. 
+--- PAGE 3 ---
+Table Fields 
+● Table Number 
+● Number of Seats 
+● Active Status 
+These tables appear in the Floor pop-up inside the POS terminal. 
+2.6 Coupons & Promotions 
+Two types of discounts can be created. 
+Coupon Codes 
+User creates a coupon with a code and a discount type either a percentage or a fixed amount 
+off the whole order. 
+The employee enters the code manually in the POS to redeem it. 
+Automated Promotions 
+These trigger automatically without any code entry. 
+If applied to a Product, a Minimum Quantity is set. The discount fires when the employee 
+reaches that quantity. 
+If applied to an Order, a Minimum Order Amount is set. The discount fires when the cart total 
+crosses that amount. 
+In both cases, the discount is either a percentage or a fixed amount and applies to the whole 
+order. 
+2.7 User / Employee Management 
+User can list all accounts and add new ones. 
+Fields 
+● Name 
+● Email 
+● Role (User/Admin or Employee/Cashier) 
+Actions Available on Each Record 
+● Change Password 
+● Archive 
+● Delete 
+--- PAGE 4 ---
+Archive deactivates the account without deleting it. 
+2.8 POS Terminal & Session 
+The POS terminal shows the last open session date and last closing sale amount. 
+The Open Session button launches the terminal. 
+When the session is closed at the end of the shift, a closing summary is displayed. 
+2.9 Reporting & Dashboard 
+Provides real-time sales insights. All stats, charts, and tables update automatically when a filter 
+is changed. 
+Available Filters 
+● Period (Today, This Week, This Month, or a custom date range) 
+● Employee 
+● Session 
+● Product 
+Summary Metrics Shown on the Dashboard 
+● Total Orders 
+● Revenue 
+● Average Order Value 
+Dashboard Components 
+● Sales Trend Chart showing revenue or order count over time 
+● Top Categories Chart showing sales distribution by category 
+● Top Orders Table showing the highest-value orders 
+● Top Products Table showing product name, quantity sold, and revenue 
+● Top Categories Table showing category-wise revenue 
+Reports can be exported as PDF or XLS. 
+The POS Terminal opens directly after login and is used by the employee to manage orders, 
+customers, payments, and tables. 
+3.1 Navigation 
+3. POS Terminal —  Views to Build
+--- PAGE 5 ---
+The top navigation bar contains: 
+● POS Order —  Opens the main order-taking screen. 
+● Orders —  Opens the list of all orders for the current session. 
+● Customer —  Opens customer management. 
+● Table View —  Opens the floor and table selection screen. 
+● Product Search Bar —  Searches products by name. 
+● Current Table Indicator. 
+● Employee Icon —  Shows the currently logged-in employee. 
+● Hamburger Menu —  Opens a dropdown with links to Products, Category, Payment 
+Method, Coupon & Promotion, Booking, User/Employee, KDS, Reports and Log-Out. 
+3.2 Floor Pop-up 
+The Floor Pop-up appears when the session starts or when the employee taps Table View. 
+It shows all floors with their tables as a numbered grid of clickable cards. Each card displays the 
+table number and number of seats. Tables with active orders are visually distinct from available 
+ones. 
+Selecting a table opens the Order View for that table. 
+3.3 Order View 
+The Order View is the primary screen used by the employee and is divided into three sections: 
+Product, Cart, and Payment. 
+Product Section 
+Products are displayed as cards. Category tabs allow the employee to filter products by 
+category. The employee can also search by product name. 
+Clicking a product adds it to the cart. 
+Cart Section 
+Each item shows: 
+● Product Name 
+● Quantity 
+● Unit Price 
+● Line Total 
+Quantity can be adjusted directly from the cart. 
+If a product-level promotion is applied, the discount is shown on the corresponding product line. 
+--- PAGE 6 ---
+If an order-level discount or coupon is applied, it appears as a separate line in the order 
+summary. 
+A Send to Kitchen action allows the employee to send the current order to the Kitchen Display. 
+Order Summary 
+● Subtotal 
+● Tax 
+● Discounts 
+● Total 
+Actions 
+● Customer —  Assign a customer to the current order. 
+● Discount —  Open the coupon code popup. 
+● Send —  Open the receipt email popup. 
+Payment Section 
+Shows all payment methods enabled in the backend. 
+The employee selects a method and completes the transaction. 
+3.4 Discount Popup 
+The employee enters a coupon code in the popup. If the code is valid, the discount is applied 
+and reflected in the order summary. 
+Automated promotions apply automatically and do not use this popup. 
+3.5 Payment & Receipt 
+Supported Payment Methods 
+● Cash —  Employee enters the amount received and the system shows the change due. 
+● UPI —  A QR code is generated from the saved UPI ID and shown on screen with the 
+total amount. The employee clicks Confirmed once the customer has paid or Cancel to 
+go back. 
+● Card —  Employee enters a transaction reference. 
+After successful payment, the order is marked as paid. 
+The employee can: 
+● Print the receipt. 
+● Send the receipt to the customer via email. 
+--- PAGE 7 ---
+3.6 Orders 
+Shows all orders created during the current session. The search bar filters by customer name, 
+order number, or date. 
+Each Order Shows 
+● Order Number 
+● Date 
+● Customer 
+● Amount 
+● Status (Draft, Paid, or Cancelled) 
+Clicking an order opens the Order Detail view showing: 
+● Order Number 
+● Date 
+● Customer 
+● Amount 
+● Status 
+● Products 
+For Draft orders, both the Delete and Edit Order buttons are visible. 
+Clicking Edit Order redirects the employee back to the cart with that order loaded for editing. 
+Paid orders are view-only. 
+3.7 Table View 
+Shows all tables across all floors. Tables with active orders are visually distinct from available 
+ones. Selecting a table opens the corresponding order. 
+3.8 Customer Management 
+The employee can search existing customers or create new ones directly from the POS 
+terminal. 
+Customer Fields 
+● Name 
+● Email 
+● Phone Number 
+Actions 
+--- PAGE 8 ---
+● Create 
+● Edit 
+● Delete 
+Once a customer is selected, they are linked to the current order and their email is used for 
+receipt delivery. 
+The Kitchen Display is accessed through a fixed system URL and is intended to be opened on a 
+separate device or browser tab by the kitchen staff. 
+It receives orders in real time when the employee clicks Send to Kitchen. 
+Each order appears as a ticket card showing: 
+● Order Number (same as the ticket number) 
+● Ordered Items 
+● Quantities 
+Only products assigned to the Kitchen Display appear on this screen. 
+Order Stages 
+● To Cook —  Order just received, not yet started. 
+● Preparing —  Order currently being made. 
+● Completed —  Order ready to serve. 
+Clicking a ticket card moves the entire order to the next stage. 
+Clicking an individual item within a ticket marks only that item as completed with a strikethrough, 
+allowing kitchen staff to track progress item by item. 
+The Kitchen Display also provides a search bar and filters by product and category. 
+By completing this challenge, participants will gain hands-on experience with: 
+● Building a complete full-stack web application 
+● Designing and consuming REST APIs 
+● Authentication and role-based access control 
+● Database design and data relationships 
+● Real-time order and kitchen workflows 
+● Payment processing and receipt generation 
+4. Kitchen Display
+5. What Participants Will Learn
+--- PAGE 9 ---
+● Reporting and analytics dashboards 
+● Managing products, customers, employees, and orders 
+Participants will also gain insight into how a real restaurant POS system operates, from order 
+creation and kitchen preparation to payment and reporting. 
+Mockup Link - 
+https://link.excalidraw.com/l/65VNwvy7c4X/1Vvr9oy6B3F 
+ 
+ 
+ 

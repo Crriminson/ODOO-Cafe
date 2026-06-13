@@ -1,5 +1,6 @@
 import * as db from '../config/db.js';
 import { KDS_STAGES } from '../../../shared/constants/kdsStages.js';
+import { emitCookAssigned } from '../websocket/kds.emitter.js';
 
 const buildCookMap = (rows) => {
   const cooks = new Map();
@@ -147,6 +148,8 @@ export const assignCooks = async (orderId) => {
     }
 
     await client.query('COMMIT');
+
+    emitCookAssigned({ order_id: orderId, assignments });
 
     return { assignments };
   } catch (error) {

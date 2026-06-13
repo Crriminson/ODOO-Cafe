@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "description": "Odoo Cafe POS — monorepo root",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev:server": "cd server && npm run dev",
-    "dev:client": "cd client && npm run dev",
-    "migrate": "cd server && npm run migrate",
-    "seed": "cd server && npm run seed"
+    "test": "npm test --prefix server",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "migrate": "npm run migrate --prefix server",
+    "seed": "npm run seed --prefix server"
   }
 }
+

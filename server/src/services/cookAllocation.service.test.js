@@ -27,6 +27,11 @@ const createTransactionClient = (t, workloadRows, updateLog, options = {}) => ({
 
 const loadModule = async (t, namedExports) => {
   t.mock.module('../config/db.js', { namedExports });
+  t.mock.module('../websocket/kds.emitter.js', {
+    namedExports: {
+      emitCookAssigned: () => {},
+    },
+  });
   return import(`./cookAllocation.service.js?test=${encodeURIComponent(t.name)}`);
 };
 
