@@ -85,8 +85,8 @@ function FloorModal({ initial, onSave, onClose }) {
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] transition-colors">Cancel</button>
             <button type="submit" disabled={saving}
-                    className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#5d3a55] transition-colors duration-150"
-                    style={{ background: '#714867', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)', opacity: saving ? 0.7 : 1 }}>
+                    className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#8A6685] transition-colors duration-150"
+                    style={{ background: '#A67FA1', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)', opacity: saving ? 0.7 : 1 }}>
               {saving ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : 'Save floor'}
             </button>
           </div>
@@ -161,8 +161,8 @@ function TableModal({ initial, floorId, onSave, onClose }) {
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] transition-colors">Cancel</button>
             <button type="submit" disabled={saving}
-                    className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#5d3a55] transition-colors"
-                    style={{ background: '#714867', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)', opacity: saving ? 0.7 : 1 }}>
+                    className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#8A6685] transition-colors"
+                    style={{ background: '#A67FA1', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)', opacity: saving ? 0.7 : 1 }}>
               {saving ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : 'Save table'}
             </button>
           </div>
@@ -177,7 +177,7 @@ function TableCard({ table, onEdit, onDelete }) {
   const occupied = table.has_active_order;
   return (
     <div className="border-2 border-[#1A1A1A] rounded-xl p-4 text-center relative hover:translate-y-[-2px] transition-transform duration-150 cursor-pointer"
-         style={{ background: occupied ? '#714867' : '#fff', boxShadow: 'var(--shadow-lg)' }}>
+         style={{ background: occupied ? '#A67FA1' : '#fff', boxShadow: 'var(--shadow-lg)' }}>
       {occupied && (
         <span className="absolute top-2 right-2 text-xs font-bold bg-[#1A1A1A] text-white px-1.5 py-0.5 rounded">●</span>
       )}
@@ -259,7 +259,7 @@ export default function FloorsAndTables() {
       {/* Heading */}
       <div className="flex items-center gap-3 mb-1">
         <div className="w-9 h-9 rounded-lg flex items-center justify-center border-2 flex-shrink-0"
-             style={{ background: '#714867', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
+             style={{ background: '#A67FA1', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
           <Layers size={18} strokeWidth={2.5} style={{ color: '#1A1A1A' }} />
         </div>
         <h1 className="text-[1.5rem] font-black text-[#1A1A1A] leading-tight">Floors & Tables</h1>
@@ -270,8 +270,8 @@ export default function FloorsAndTables() {
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm font-bold text-[#1A1A1A]">{floors.length} floor{floors.length !== 1 ? 's' : ''}</span>
         <button onClick={() => setFloorModal({})}
-                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#5d3a55] transition-colors"
-                style={{ background: '#714867', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
+                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#8A6685] transition-colors"
+                style={{ background: '#A67FA1', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
           <Plus size={15} strokeWidth={2} /> Add floor
         </button>
       </div>
@@ -298,8 +298,8 @@ export default function FloorsAndTables() {
           <p className="text-sm font-bold text-[#1A1A1A] mb-1">No floors yet</p>
           <p className="text-xs text-[#6B7280] mb-4">Add a floor to start laying out your restaurant.</p>
           <button onClick={() => setFloorModal({})}
-                  className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#5d3a55] transition-colors"
-                  style={{ background: '#714867', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
+                  className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#8A6685] transition-colors"
+                  style={{ background: '#A67FA1', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
             <Plus size={14} strokeWidth={2} /> Add floor
           </button>
         </div>
@@ -315,8 +315,8 @@ export default function FloorsAndTables() {
                 <div className="flex items-center gap-2">
                   <button aria-label={`Add table to ${floor.name}`}
                           onClick={() => setTableModal({ floorId: floor.id })}
-                          className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black border-2 hover:bg-[#5d3a55] transition-colors"
-                          style={{ background: '#714867', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
+                          className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black border-2 hover:bg-[#8A6685] transition-colors"
+                          style={{ background: '#A67FA1', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
                     <Plus size={12} strokeWidth={2} /> Table
                   </button>
                   <button aria-label={`Edit floor ${floor.name}`}
@@ -369,4 +369,5 @@ export default function FloorsAndTables() {
     </div>
   );
 }
+
 

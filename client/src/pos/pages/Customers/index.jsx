@@ -184,7 +184,7 @@ export default function Customers() {
       margin: '4px 0 0 0',
     },
     addButton: {
-      backgroundColor: '#714867',
+      backgroundColor: '#A67FA1',
       color: '#1A1A1A',
       border: '3px solid #1A1A1A',
       padding: '12px 24px',
@@ -199,7 +199,7 @@ export default function Customers() {
       transition: 'transform 0.1s, box-shadow 0.1s',
     },
     activeSelection: {
-      backgroundColor: '#714867',
+      backgroundColor: '#A67FA1',
       border: '3px solid #1A1A1A',
       boxShadow: '6px 6px 0px #1A1A1A',
       padding: '20px',
@@ -304,7 +304,7 @@ export default function Customers() {
       alignItems: 'center',
       gap: '4px',
       backgroundColor: '#1A1A1A',
-      color: '#714867',
+      color: '#A67FA1',
       padding: '6px 10px',
       fontSize: '13px',
       fontWeight: '800',
@@ -330,7 +330,7 @@ export default function Customers() {
     },
     selectBtn: {
       flex: 1,
-      backgroundColor: '#714867',
+      backgroundColor: '#A67FA1',
       color: '#1A1A1A',
       border: '2px solid #1A1A1A',
       padding: '8px 12px',
@@ -408,7 +408,7 @@ export default function Customers() {
     },
     formSubmitBtn: {
       flex: 1,
-      backgroundColor: '#714867',
+      backgroundColor: '#A67FA1',
       color: '#1A1A1A',
       border: '2px solid #1A1A1A',
       padding: '12px',
@@ -627,4 +627,5 @@ export default function Customers() {
     </div>
   );
 }
+
 

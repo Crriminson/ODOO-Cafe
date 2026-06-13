@@ -194,7 +194,7 @@ export default function Cooks() {
       margin: '4px 0 0 0',
     },
     addButton: {
-      backgroundColor: '#714867',
+      backgroundColor: '#A67FA1',
       color: '#1A1A1A',
       border: '3px solid #1A1A1A',
       padding: '12px 24px',
@@ -253,7 +253,7 @@ export default function Cooks() {
       textTransform: 'uppercase',
     },
     activeFilterTab: {
-      backgroundColor: '#714867',
+      backgroundColor: '#A67FA1',
     },
     errorBanner: {
       backgroundColor: '#FF6B6B',
@@ -390,7 +390,7 @@ export default function Cooks() {
     },
     formSubmitBtn: {
       flex: 1,
-      backgroundColor: '#714867',
+      backgroundColor: '#A67FA1',
       color: '#1A1A1A',
       border: '2px solid #1A1A1A',
       padding: '12px',
@@ -633,4 +633,5 @@ export default function Cooks() {
     </div>
   );
 }
+
 

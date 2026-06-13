@@ -211,8 +211,8 @@ export default function OrderView() {
           <span
             style={{
               background: 'rgba(245,193,66,0.15)',
-              border: '1px solid #714867',
-              color: '#714867',
+              border: '1px solid #A67FA1',
+              color: '#A67FA1',
               borderRadius: '6px',
               padding: '3px 10px',
               fontSize: '11px',
@@ -281,7 +281,7 @@ export default function OrderView() {
                 flex: 1,
                 padding: '12px',
                 border: 'none',
-                borderBottom: activeTab === tab ? '3px solid #714867' : '3px solid transparent',
+                borderBottom: activeTab === tab ? '3px solid #A67FA1' : '3px solid transparent',
                 backgroundColor: activeTab === tab ? '#fff' : 'transparent',
                 fontWeight: activeTab === tab ? 900 : 700,
                 fontSize: '13px',
@@ -369,7 +369,7 @@ export default function OrderView() {
                 width: '48px',
                 height: '48px',
                 borderRadius: '12px',
-                background: '#714867',
+                background: '#A67FA1',
                 border: '2px solid #1A1A1A',
                 display: 'flex',
                 alignItems: 'center',
@@ -393,4 +393,5 @@ export default function OrderView() {
     </PosLayout>
   );
 }
+
 

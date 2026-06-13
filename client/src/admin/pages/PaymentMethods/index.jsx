@@ -25,7 +25,7 @@ function Toggle({ enabled, onChange, label }) {
       aria-label={label}
       onClick={() => onChange(!enabled)}
       className="w-11 h-6 rounded-full border-2 border-[#1A1A1A] relative transition-colors duration-150 flex-shrink-0"
-      style={{ background: enabled ? '#714867' : '#fff', boxShadow: 'var(--shadow-md)' }}
+      style={{ background: enabled ? '#A67FA1' : '#fff', boxShadow: 'var(--shadow-md)' }}
     >
       <span
         className="absolute top-0.5 w-4 h-4 rounded-full transition-transform duration-150"
@@ -69,7 +69,7 @@ export default function PaymentMethods() {
       {/* Heading */}
       <div className="flex items-center gap-3 mb-1">
         <div className="w-9 h-9 rounded-lg flex items-center justify-center border-2 flex-shrink-0"
-             style={{ background: '#714867', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
+             style={{ background: '#A67FA1', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
           <CreditCard size={18} strokeWidth={2.5} style={{ color: '#1A1A1A' }} />
         </div>
         <h1 className="text-[1.5rem] font-black text-[#1A1A1A] leading-tight">Payment Methods</h1>
@@ -90,7 +90,7 @@ export default function PaymentMethods() {
                  style={{ boxShadow: 'var(--shadow-lg)' }}>
               {/* Method icon */}
               <div className="w-12 h-12 rounded-xl flex items-center justify-center border-2 flex-shrink-0"
-                   style={{ background: enabled ? '#714867' : '#F5F0E8', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
+                   style={{ background: enabled ? '#A67FA1' : '#F5F0E8', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
                 <Icon size={20} strokeWidth={2} style={{ color: '#1A1A1A' }} />
               </div>
 
@@ -134,4 +134,5 @@ export default function PaymentMethods() {
     </div>
   );
 }
+
 

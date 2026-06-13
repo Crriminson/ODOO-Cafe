@@ -178,7 +178,7 @@ function ProductModal({ initial, categories, onSave, onClose }) {
             </button>
             <button type="submit" disabled={saving}
                     className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 transition-colors duration-150"
-                    style={{ background: '#714867', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)', opacity: saving ? 0.7 : 1 }}>
+                    style={{ background: '#A67FA1', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)', opacity: saving ? 0.7 : 1 }}>
               {saving ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : 'Save product'}
             </button>
           </div>
@@ -241,7 +241,7 @@ export default function Products() {
       {/* Page heading */}
       <div className="flex items-center gap-3 mb-1">
         <div className="w-9 h-9 rounded-lg flex items-center justify-center border-2 flex-shrink-0"
-             style={{ background: '#714867', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
+             style={{ background: '#A67FA1', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
           <Package size={18} strokeWidth={2.5} style={{ color: '#1A1A1A' }} />
         </div>
         <h1 className="text-[1.5rem] font-black text-[#1A1A1A] leading-tight">Products</h1>
@@ -273,8 +273,8 @@ export default function Products() {
           {/* Add button */}
           <button
             onClick={() => setEditTarget({})}
-            className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 transition-colors duration-150 hover:bg-[#5d3a55]"
-            style={{ background: '#714867', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
+            className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 transition-colors duration-150 hover:bg-[#8A6685]"
+            style={{ background: '#A67FA1', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
             <Plus size={15} strokeWidth={2} /> Add product
           </button>
         </div>
@@ -308,8 +308,8 @@ export default function Products() {
                     <p className="text-xs text-[#6B7280] mb-4">Add your first menu item to get started.</p>
                     <button
                       onClick={() => setEditTarget({})}
-                      className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#5d3a55] transition-colors duration-150"
-                      style={{ background: '#714867', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
+                      className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#8A6685] transition-colors duration-150"
+                      style={{ background: '#A67FA1', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
                       <Plus size={14} strokeWidth={2} /> Add product
                     </button>
                   </td>
@@ -383,4 +383,5 @@ export default function Products() {
     </div>
   );
 }
+
 

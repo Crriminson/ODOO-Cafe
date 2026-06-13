@@ -43,7 +43,7 @@ export default function SignupPage() {
         {/* Logo */}
         <div className="flex items-center justify-center gap-2.5 mb-8">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-               style={{ background: '#714867', boxShadow: 'var(--shadow-md)' }}>
+               style={{ background: '#A67FA1', boxShadow: 'var(--shadow-md)' }}>
             <Coffee size={20} strokeWidth={2.5} style={{ color: '#1A1A1A' }} />
           </div>
           <span className="text-xl font-black tracking-tight" style={{ color: '#1A1A1A' }}>
@@ -151,7 +151,7 @@ export default function SignupPage() {
                       onClick={() => setForm((f) => ({ ...f, role }))}
                       className="flex flex-col items-start px-4 py-3 rounded-xl border-2 text-left transition-colors duration-150"
                       style={{
-                        background:  active ? '#714867' : '#fff',
+                        background:  active ? '#A67FA1' : '#fff',
                         borderColor: '#1A1A1A',
                         boxShadow:   active ? 'var(--shadow-sm)' : 'none',
                       }}
@@ -183,15 +183,15 @@ export default function SignupPage() {
               id="signup-submit"
               className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-black border-2 transition-colors duration-150"
               style={{
-                background:  loading ? '#5d3a55' : '#714867',
+                background:  loading ? '#8A6685' : '#A67FA1',
                 borderColor: '#1A1A1A',
                 color:       '#1A1A1A',
                 boxShadow:   'var(--shadow-md)',
                 cursor:      loading ? 'not-allowed' : 'pointer',
                 opacity:     loading ? 0.8 : 1,
               }}
-              onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = '#5d3a55'; }}
-              onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = '#714867'; }}
+              onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = '#8A6685'; }}
+              onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = '#A67FA1'; }}
             >
               {loading
                 ? <><Loader2 size={16} className="animate-spin" /> Creating account…</>
@@ -217,3 +217,4 @@ export default function SignupPage() {
     </div>
   );
 }
+

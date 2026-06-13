@@ -2,7 +2,7 @@ const baseClasses =
   'min-h-[44px] min-w-[44px] rounded-lg px-4 py-2 transition-all duration-150 flex items-center justify-center gap-2';
 
 const variantClasses = {
-  primary: 'bg-[#714867] text-[#1A1A1A] font-black hover:brightness-95',
+  primary: 'bg-[#A67FA1] text-[#1A1A1A] font-black hover:brightness-95',
   secondary: 'bg-white text-[#1A1A1A] font-bold border border-[#E5E7EB] hover:bg-gray-50',
   danger: 'bg-[#EF4444] text-white font-bold hover:bg-red-600',
   ghost: 'bg-transparent text-[#6B7280] font-medium hover:bg-gray-100'
@@ -44,4 +44,5 @@ export function Button({
 }
 
 export default Button;
+
 
