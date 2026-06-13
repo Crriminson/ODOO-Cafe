@@ -1,0 +1,7 @@
+{
+  "name": "odoo-cafe-shared",
+  "version": "1.0.0",
+  "description": "Shared constants and types for Odoo Cafe POS",
+  "private": true,
+  "type": "module"
+}

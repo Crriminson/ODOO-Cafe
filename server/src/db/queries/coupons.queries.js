@@ -1,72 +1,79 @@
-import { db } from '../../config/db.js';
+import * as db from '../../config/db.js';
 
-/**
- * Fetch all coupons.
- */
-export const getAllCoupons = async () => {
-  const rows = await db('coupons').select('*').orderBy('id', 'asc');
-  return { rows };
+export const findValidCouponByCode = async (code) => {
+  const { rows } = await db.query(
+    `SELECT
+       id,
+       code,
+       discount_type,
+       discount_value::text
+     FROM coupons
+     WHERE LOWER(code) = LOWER($1)
+       AND is_active = TRUE
+     LIMIT 1`,
+    [code]
+  );
+
+  return rows[0] ?? null;
 };
 
-/**
- * Fetch a single coupon by id.
- */
+export const getAllCoupons = () =>
+  db.query(
+    `SELECT id, code, discount_type, discount_value::text, is_active, created_at, updated_at
+     FROM coupons
+     ORDER BY created_at DESC`
+  );
+
 export const getCouponById = async (id) => {
-  const rows = await db('coupons').where({ id }).select('*').limit(1);
-  return { rows };
+  const { rows } = await db.query(
+    `SELECT id, code, discount_type, discount_value::text, is_active, created_at, updated_at
+     FROM coupons
+     WHERE id = $1
+     LIMIT 1`,
+    [id]
+  );
+  return rows[0] ?? null;
 };
 
-/**
- * Fetch a single active coupon by code (case-insensitive).
- */
-export const getCouponByCode = async (code) => {
-  const rows = await db('coupons')
-    .whereRaw('LOWER(code) = LOWER(?)', [code])
-    .where('is_active', true)
-    .select('*')
-    .limit(1);
-  return { rows };
-};
+export const createCoupon = (code, discountType, discountValue) =>
+  db.query(
+    `INSERT INTO coupons (code, discount_type, discount_value)
+     VALUES ($1, $2, $3)
+     RETURNING id, code, discount_type, discount_value::text, is_active, created_at, updated_at`,
+    [code, discountType, discountValue]
+  );
 
-/**
- * Insert a new coupon.
- */
-export const createCoupon = async ({ code, discount_type, discount_value, is_active }) => {
-  const rows = await db('coupons')
-    .insert({
-      code,
-      discount_type,
-      discount_value,
-      is_active: is_active ?? true,
-    })
-    .returning('*');
-  return { rows };
-};
-
-/**
- * Dynamic UPDATE coupon fields.
- */
 export const updateCoupon = async (id, fields) => {
-  const allowed = ['code', 'discount_type', 'discount_value', 'is_active'];
-  const updateFields = {};
-  for (const col of allowed) {
-    if (fields[col] !== undefined) {
-      updateFields[col] = fields[col];
+  const setKeys = [];
+  const params = [];
+
+  const allowedFields = ['code', 'discount_type', 'discount_value', 'is_active'];
+  for (const key of allowedFields) {
+    if (fields[key] !== undefined) {
+      params.push(fields[key]);
+      setKeys.push(`${key} = $${params.length}`);
     }
   }
-  updateFields.updated_at = db.fn.now();
 
-  const rows = await db('coupons')
-    .where({ id })
-    .update(updateFields)
-    .returning('*');
-  return { rows };
+  if (setKeys.length === 0) {
+    return getCouponById(id);
+  }
+
+  params.push(id);
+  const sql = `
+    UPDATE coupons
+    SET ${setKeys.join(', ')}, updated_at = NOW()
+    WHERE id = $${params.length}
+    RETURNING id, code, discount_type, discount_value::text, is_active, created_at, updated_at
+  `;
+  const { rows } = await db.query(sql, params);
+  return rows[0] ?? null;
 };
 
-/**
- * Hard-delete a coupon.
- */
-export const deleteCoupon = async (id) => {
-  const rows = await db('coupons').where({ id }).del().returning('id');
-  return { rows };
-};
+export const deleteCoupon = (id) =>
+  db.query(
+    `DELETE FROM coupons
+     WHERE id = $1
+     RETURNING id`,
+    [id]
+  );

@@ -1,80 +1,96 @@
-import { db } from '../../config/db.js';
+import * as db from '../../config/db.js';
 
-/**
- * Search customers by name, email, or phone.
- */
-export const searchCustomers = async (search = '') => {
-  const queryBuilder = db('customers');
-  if (search && search.trim() !== '') {
-    queryBuilder.where(function() {
-      this.where('name', 'ilike', `%${search}%`)
-        .orWhere('email', 'ilike', `%${search}%`)
-        .orWhere('phone', 'ilike', `%${search}%`);
-    });
-  }
-  const rows = await queryBuilder.select('*').orderBy('id', 'desc');
-  return { rows };
+export const findValidCustomerByEmail = async (email) => {
+  if (!email) return null;
+  const { rows } = await db.query(
+    `SELECT id, email
+     FROM customers
+     WHERE LOWER(email) = LOWER($1)
+     LIMIT 1`,
+    [email]
+  );
+  return rows[0] ?? null;
 };
 
-/**
- * Fetch a customer by ID.
- */
 export const getCustomerById = async (id) => {
-  const rows = await db('customers').where({ id }).select('*').limit(1);
-  return { rows };
+  const { rows } = await db.query(
+    `SELECT id, name, email, phone, address, loyalty_points, created_at, updated_at
+     FROM customers
+     WHERE id = $1
+     LIMIT 1`,
+    [id]
+  );
+  return rows[0] ?? null;
 };
 
-/**
- * Create a new customer record.
- */
-export const createCustomer = async ({ name, email, phone, address }) => {
-  const rows = await db('customers')
-    .insert({
-      name,
-      email: email || null,
-      phone: phone || null,
-      address: address || null,
-      loyalty_points: 0,
-    })
-    .returning('*');
-  return { rows };
+export const getAllCustomers = async ({ search } = {}) => {
+  let sql = `
+    SELECT id, name, email, phone, address, loyalty_points, created_at, updated_at
+    FROM customers
+  `;
+  const params = [];
+
+  if (search) {
+    params.push(`%${search}%`);
+    sql += ` WHERE name ILIKE $1 OR email ILIKE $1 OR phone ILIKE $1`;
+  }
+
+  sql += ` ORDER BY name ASC, id ASC`;
+
+  const { rows } = await db.query(sql, params);
+  return rows;
 };
 
-/**
- * Update an existing customer record.
- */
+export const createCustomer = async (name, email, phone, address) => {
+  const emailVal = email === '' ? null : email;
+  const phoneVal = phone === '' ? null : phone;
+  const addressVal = address === '' ? null : address;
+
+  const { rows } = await db.query(
+    `INSERT INTO customers (name, email, phone, address)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, name, email, phone, address, loyalty_points, created_at, updated_at`,
+    [name, emailVal, phoneVal, addressVal]
+  );
+  return rows[0];
+};
+
 export const updateCustomer = async (id, fields) => {
-  const allowed = ['name', 'email', 'phone', 'address'];
-  const updateFields = {};
-  for (const col of allowed) {
-    if (fields[col] !== undefined) {
-      updateFields[col] = fields[col];
+  const setKeys = [];
+  const params = [];
+
+  const allowedFields = ['name', 'email', 'phone', 'address'];
+  for (const key of allowedFields) {
+    if (fields[key] !== undefined) {
+      let val = fields[key];
+      if (val === '') val = null;
+      params.push(val);
+      setKeys.push(`${key} = $${params.length}`);
     }
   }
-  updateFields.updated_at = db.fn.now();
 
-  const rows = await db('customers')
-    .where({ id })
-    .update(updateFields)
-    .returning('*');
-  return { rows };
+  if (setKeys.length === 0) {
+    return getCustomerById(id);
+  }
+
+  params.push(id);
+  const sql = `
+    UPDATE customers
+    SET ${setKeys.join(', ')}, updated_at = NOW()
+    WHERE id = $${params.length}
+    RETURNING id, name, email, phone, address, loyalty_points, created_at, updated_at
+  `;
+
+  const { rows } = await db.query(sql, params);
+  return rows[0] ?? null;
 };
 
-/**
- * Hard-delete a customer record.
- */
 export const deleteCustomer = async (id) => {
-  const rows = await db('customers').where({ id }).del().returning('id');
-  return { rows };
-};
-
-/**
- * Increment or decrement a customer's loyalty points balance.
- */
-export const updateCustomerLoyaltyPoints = async (id, pointsDiff) => {
-  const rows = await db('customers')
-    .where({ id })
-    .increment('loyalty_points', pointsDiff)
-    .returning('*');
-  return { rows };
+  const { rows } = await db.query(
+    `DELETE FROM customers
+     WHERE id = $1
+     RETURNING id`,
+    [id]
+  );
+  return rows[0] ?? null;
 };

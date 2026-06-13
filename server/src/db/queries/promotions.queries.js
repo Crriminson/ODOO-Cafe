@@ -1,84 +1,104 @@
-import { db } from '../../config/db.js';
+import * as db from '../../config/db.js';
 
-/**
- * Fetch all promotions.
- */
-export const getAllPromotions = async () => {
-  const rows = await db('promotions').select('*').orderBy('id', 'asc');
-  return { rows };
+export const getAllPromotions = async ({ is_active } = {}) => {
+  let sql = `
+    SELECT id, name, applies_to, product_id, min_quantity, min_order_amount::text,
+           discount_type, discount_value::text, rules, is_active, created_at, updated_at
+    FROM promotions
+  `;
+  const params = [];
+  if (is_active !== undefined) {
+    params.push(is_active === 'true' || is_active === true);
+    sql += ` WHERE is_active = $1`;
+  }
+  sql += ` ORDER BY created_at DESC`;
+  return db.query(sql, params);
 };
 
-/**
- * Fetch a single promotion by id.
- */
 export const getPromotionById = async (id) => {
-  const rows = await db('promotions').where({ id }).select('*').limit(1);
-  return { rows };
+  const { rows } = await db.query(
+    `SELECT id, name, applies_to, product_id, min_quantity, min_order_amount::text,
+            discount_type, discount_value::text, rules, is_active, created_at, updated_at
+     FROM promotions
+     WHERE id = $1
+     LIMIT 1`,
+    [id]
+  );
+  return rows[0] ?? null;
 };
 
-/**
- * Fetch all active promotions.
- */
-export const getActivePromotions = async () => {
-  const rows = await db('promotions').where({ is_active: true }).select('*');
-  return { rows };
-};
-
-/**
- * Create a new automated promotion.
- */
-export const createPromotion = async ({
-  name, applies_to, product_id, min_quantity, min_order_amount,
-  discount_type, discount_value, rules, is_active
-}) => {
-  const rows = await db('promotions')
-    .insert({
+export const createPromotion = ({
+  name,
+  applies_to,
+  product_id,
+  min_quantity,
+  min_order_amount,
+  discount_type,
+  discount_value,
+  rules,
+}) =>
+  db.query(
+    `INSERT INTO promotions (
+       name, applies_to, product_id, min_quantity, min_order_amount,
+       discount_type, discount_value, rules
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id, name, applies_to, product_id, min_quantity, min_order_amount::text,
+               discount_type, discount_value::text, rules, is_active, created_at, updated_at`,
+    [
       name,
       applies_to,
-      product_id: product_id || null,
-      min_quantity: min_quantity !== undefined ? min_quantity : null,
-      min_order_amount: min_order_amount || null,
+      product_id,
+      min_quantity,
+      min_order_amount,
       discount_type,
       discount_value,
-      rules: rules ? JSON.stringify(rules) : null,
-      is_active: is_active ?? true,
-    })
-    .returning('*');
-  return { rows };
-};
+      rules,
+    ]
+  );
 
-/**
- * Update promotion fields.
- */
 export const updatePromotion = async (id, fields) => {
-  const allowed = [
-    'name', 'applies_to', 'product_id', 'min_quantity', 'min_order_amount',
-    'discount_type', 'discount_value', 'rules', 'is_active'
-  ];
+  const setKeys = [];
+  const params = [];
 
-  const updateFields = {};
-  for (const col of allowed) {
-    if (fields[col] !== undefined) {
-      if (col === 'rules') {
-        updateFields[col] = fields[col] ? JSON.stringify(fields[col]) : null;
-      } else {
-        updateFields[col] = fields[col];
-      }
+  const allowedFields = [
+    'name',
+    'applies_to',
+    'product_id',
+    'min_quantity',
+    'min_order_amount',
+    'discount_type',
+    'discount_value',
+    'rules',
+    'is_active',
+  ];
+  for (const key of allowedFields) {
+    if (fields[key] !== undefined) {
+      params.push(fields[key]);
+      setKeys.push(`${key} = $${params.length}`);
     }
   }
-  updateFields.updated_at = db.fn.now();
 
-  const rows = await db('promotions')
-    .where({ id })
-    .update(updateFields)
-    .returning('*');
-  return { rows };
+  if (setKeys.length === 0) {
+    return getPromotionById(id);
+  }
+
+  params.push(id);
+  const sql = `
+    UPDATE promotions
+    SET ${setKeys.join(', ')}, updated_at = NOW()
+    WHERE id = $${params.length}
+    RETURNING id, name, applies_to, product_id, min_quantity, min_order_amount::text,
+              discount_type, discount_value::text, rules, is_active, created_at, updated_at
+  `;
+  const { rows } = await db.query(sql, params);
+  return rows[0] ?? null;
 };
 
-/**
- * Hard-delete a promotion.
- */
-export const deletePromotion = async (id) => {
-  const rows = await db('promotions').where({ id }).del().returning('id');
-  return { rows };
-};
+export const deletePromotion = (id) =>
+  db.query(
+    `DELETE FROM promotions
+     WHERE id = $1
+     RETURNING id`,
+    [id]
+  );

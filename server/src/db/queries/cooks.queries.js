@@ -1,103 +1,153 @@
-import { db } from '../../config/db.js';
+import * as db from '../../config/db.js';
 
-/**
- * Fetch all cooks with their preferred category IDs nested.
- */
-export const getAllCooks = async () => {
-  const cooks = await db('cooks').select('*').orderBy('id', 'asc');
-  
-  // Fetch category preferences for all cooks
-  const prefs = await db('cook_category_preferences').select('*');
-  
-  const cooksWithPrefs = cooks.map(cook => {
-    const cookPrefs = prefs
-      .filter(p => p.cook_id === cook.id)
-      .map(p => p.category_id);
-    return { ...cook, category_ids: cookPrefs };
-  });
+export const getAllCooks = async ({ is_active } = {}) => {
+  let sql = `
+    SELECT id, name, is_active, created_at, updated_at
+    FROM cooks
+  `;
+  const params = [];
 
-  return { rows: cooksWithPrefs };
+  if (is_active !== undefined) {
+    params.push(is_active);
+    sql += ` WHERE is_active = $1`;
+  }
+
+  sql += ` ORDER BY name ASC, id ASC`;
+
+  const { rows } = await db.query(sql, params);
+  return rows;
 };
 
-/**
- * Fetch a single cook by id.
- */
 export const getCookById = async (id) => {
-  const cooks = await db('cooks').where({ id }).select('*').limit(1);
-  if (cooks.length === 0) return null;
-  
-  const prefs = await db('cook_category_preferences')
-    .where({ cook_id: id })
-    .select('category_id');
-
-  const categoryIds = prefs.map(p => p.category_id);
-  return { ...cooks[0], category_ids: categoryIds };
+  const { rows } = await db.query(
+    `SELECT id, name, is_active, created_at, updated_at
+     FROM cooks
+     WHERE id = $1
+     LIMIT 1`,
+    [id]
+  );
+  return rows[0] ?? null;
 };
 
-/**
- * Create a new cook profile with optional category preferences.
- */
+export const getCookCategoryPreferences = async (cookId) => {
+  const { rows } = await db.query(
+    `SELECT c.id, c.name, c.color
+     FROM categories c
+     JOIN cook_category_preferences ccp ON c.id = ccp.category_id
+     WHERE ccp.cook_id = $1
+     ORDER BY c.name ASC, c.id ASC`,
+    [cookId]
+  );
+  return rows;
+};
+
 export const createCook = async (name, categoryIds = []) => {
-  return db.transaction(async (trx) => {
-    const [cook] = await trx('cooks')
-      .insert({ name, is_active: true })
-      .returning('*');
-    
-    if (categoryIds.length > 0) {
-      const prefs = categoryIds.map(catId => ({
-        cook_id: cook.id,
-        category_id: catId
-      }));
-      await trx('cook_category_preferences').insert(prefs);
-    }
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
 
-    return { ...cook, category_ids: categoryIds };
-  });
-};
+    const { rows } = await client.query(
+      `INSERT INTO cooks (name, is_active)
+       VALUES ($1, TRUE)
+       RETURNING id, name, is_active, created_at, updated_at`,
+      [name]
+    );
+    const cook = rows[0];
 
-/**
- * Update an existing cook profile.
- */
-export const updateCook = async (id, { name, is_active, categoryIds }) => {
-  return db.transaction(async (trx) => {
-    const updateFields = {};
-    if (name !== undefined) updateFields.name = name;
-    if (is_active !== undefined) updateFields.is_active = is_active;
-    updateFields.updated_at = trx.fn.now();
-
-    const [cook] = await trx('cooks')
-      .where({ id })
-      .update(updateFields)
-      .returning('*');
-
-    if (!cook) return null;
-
-    if (categoryIds !== undefined) {
-      await trx('cook_category_preferences').where({ cook_id: id }).del();
-      if (categoryIds.length > 0) {
-        const prefs = categoryIds.map(catId => ({
-          cook_id: id,
-          category_id: catId
-        }));
-        await trx('cook_category_preferences').insert(prefs);
+    if (categoryIds && categoryIds.length > 0) {
+      for (const categoryId of categoryIds) {
+        await client.query(
+          `INSERT INTO cook_category_preferences (cook_id, category_id)
+           VALUES ($1, $2)`,
+          [cook.id, categoryId]
+        );
       }
     }
 
-    const currentPrefs = categoryIds !== undefined 
-      ? categoryIds 
-      : (await trx('cook_category_preferences').where({ cook_id: id }).select('category_id')).map(p => p.category_id);
-
-    return { ...cook, category_ids: currentPrefs };
-  });
+    await client.query('COMMIT');
+    return cook;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
-/**
- * Hard-delete a cook profile and their preferences.
- */
-export const deleteCook = async (id) => {
-  return db.transaction(async (trx) => {
-    await trx('cook_category_preferences').where({ cook_id: id }).del();
-    const count = await trx('cooks').where({ id }).del();
-    return count > 0;
-  });
+export const updateCook = async (id, fields = {}, categoryIds) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    const setKeys = [];
+    const params = [];
+    const allowedFields = ['name', 'is_active'];
+
+    for (const key of allowedFields) {
+      if (fields[key] !== undefined) {
+        params.push(fields[key]);
+        setKeys.push(`${key} = $${params.length}`);
+      }
+    }
+
+    let cook = null;
+    if (setKeys.length > 0) {
+      params.push(id);
+      const { rows } = await client.query(
+        `UPDATE cooks
+         SET ${setKeys.join(', ')}, updated_at = NOW()
+         WHERE id = $${params.length}
+         RETURNING id, name, is_active, created_at, updated_at`,
+        params
+      );
+      cook = rows[0] ?? null;
+    } else {
+      const { rows } = await client.query(
+        `SELECT id, name, is_active, created_at, updated_at
+         FROM cooks
+         WHERE id = $1`,
+        [id]
+      );
+      cook = rows[0] ?? null;
+    }
+
+    if (cook && categoryIds !== undefined) {
+      // Delete existing preferences first
+      await client.query(
+        `DELETE FROM cook_category_preferences
+         WHERE cook_id = $1`,
+         [id]
+      );
+
+      // Insert new preferences
+      if (categoryIds && categoryIds.length > 0) {
+        for (const categoryId of categoryIds) {
+          await client.query(
+            `INSERT INTO cook_category_preferences (cook_id, category_id)
+             VALUES ($1, $2)`,
+            [id, categoryId]
+          );
+        }
+      }
+    }
+
+    await client.query('COMMIT');
+    return cook;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+export const softDeleteCook = async (id) => {
+  const { rows } = await db.query(
+    `UPDATE cooks
+     SET is_active = FALSE, updated_at = NOW()
+     WHERE id = $1
+     RETURNING id, name, is_active, created_at, updated_at`,
+    [id]
+  );
+  return rows[0] ?? null;
 };
