@@ -3,32 +3,31 @@ import { env } from './env.js';
 
 const { Pool } = pg;
 
-const poolConfig = env.DB.url
-  ? { connectionString: env.DB.url }
-  : {
-      host: env.DB.host,
-      port: env.DB.port,
-      user: env.DB.user,
-      password: env.DB.password,
-      database: env.DB.database
-    };
-
-const pool = new Pool({
-  ...poolConfig,
-  max: 20, // max number of clients in the pool
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
-
-pool.on('connect', () => {
-  // Database client connected
-});
+const pool = new Pool(
+  env.DATABASE_URL
+    ? { connectionString: env.DATABASE_URL }
+    : {
+        host:     env.DB.host,
+        port:     env.DB.port,
+        user:     env.DB.user,
+        password: env.DB.password,
+        database: env.DB.database,
+      },
+  {
+    max:                    20,
+    idleTimeoutMillis:      30_000,
+    connectionTimeoutMillis: 2_000,
+  }
+);
 
 pool.on('error', (err) => {
-  console.error('Unexpected database pool error:', err);
+  console.error('[pg] Unexpected pool error:', err);
 });
 
+/** Run a single query — use for everything that doesn't need a transaction. */
 export const query = (text, params) => pool.query(text, params);
+
+/** Grab a dedicated client from the pool — caller must call client.release(). */
 export const getClient = () => pool.connect();
 
 export default pool;

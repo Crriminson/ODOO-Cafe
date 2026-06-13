@@ -11,18 +11,14 @@ const MIGRATIONS_DIR = path.resolve(__dirname, 'migrations');
 const SEED_FILE = path.resolve(__dirname, 'seeds/seed.sql');
 
 async function ensureDatabaseExists() {
-  const dbName = env.DB.url 
-    ? env.DB.url.split('/').pop().split('?')[0]
+  const dbName = env.DATABASE_URL
+    ? env.DATABASE_URL.split('/').pop().split('?')[0]
     : env.DB.database;
-
-  console.log('DEBUG: env.DB.url =', env.DB.url);
-  console.log('DEBUG: env.DB.password type =', typeof env.DB.password);
-  console.log('DEBUG: env.DB.password value =', JSON.stringify(env.DB.password));
 
   // Connection config for default postgres database
   let tempConfig;
-  if (env.DB.url) {
-    const urlObj = new URL(env.DB.url);
+  if (env.DATABASE_URL) {
+    const urlObj = new URL(env.DATABASE_URL);
     urlObj.pathname = '/postgres';
     tempConfig = { connectionString: urlObj.toString() };
   } else {
@@ -34,8 +30,6 @@ async function ensureDatabaseExists() {
       database: 'postgres'
     };
   }
-
-  console.log('DEBUG: tempConfig =', { ...tempConfig, password: '[HIDDEN]' });
 
   const client = new pg.Client(tempConfig);
   await client.connect();
