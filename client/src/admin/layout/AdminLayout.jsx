@@ -1,72 +1,110 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { LayoutDashboard, Package, Tag, CreditCard, Layers, Ticket, Users, BarChart2, LogOut } from 'lucide-react';
 import { useAuth } from '../../shared/hooks/useAuth';
 
 const NAV_LINKS = [
-  { label: 'Dashboard',            to: '/admin/dashboard' },
-  { label: 'Products',             to: '/admin/products' },
-  { label: 'Categories',           to: '/admin/categories' },
-  { label: 'Payment Methods',      to: '/admin/payment-methods' },
-  { label: 'Floors & Tables',      to: '/admin/floors-tables' },
-  { label: 'Coupons & Promotions', to: '/admin/coupons' },
-  { label: 'Employees',            to: '/admin/employees' },
-  { label: 'Reports',              to: '/admin/reports' },
+  { label: 'Dashboard',            to: '/admin/dashboard',       icon: LayoutDashboard },
+  { label: 'Products',             to: '/admin/products',        icon: Package },
+  { label: 'Categories',           to: '/admin/categories',      icon: Tag },
+  { label: 'Payment Methods',      to: '/admin/payment-methods', icon: CreditCard },
+  { label: 'Floors & Tables',      to: '/admin/floors-tables',   icon: Layers },
+  { label: 'Coupons & Promotions', to: '/admin/coupons',         icon: Ticket },
+  { label: 'Employees',            to: '/admin/employees',       icon: Users },
+  { label: 'Reports',              to: '/admin/reports',         icon: BarChart2 },
 ];
 
 export default function AdminLayout() {
   const { logout } = useAuth();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 text-gray-800">
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-canvas)' }}>
 
-      {/* ── Sidebar ───────────────────────────────────────────────── */}
-      <aside className="w-56 flex-shrink-0 flex flex-col bg-white border-r border-gray-200">
-        <div className="px-4 py-5 border-b border-gray-200">
-          <span className="text-sm font-semibold text-amber-400 uppercase tracking-widest">
-            Admin
-          </span>
+      {/* ── Sidebar ───────────────────────────────────────────────────── */}
+      <aside className="w-60 flex-shrink-0 flex flex-col" style={{ background: '#1A1A1A' }}>
+
+        {/* Brand */}
+        <div className="px-5 py-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                 style={{ background: '#F5C142', boxShadow: 'var(--shadow-sm)' }}>
+              <span className="text-sm font-black" style={{ color: '#1A1A1A' }}>☕</span>
+            </div>
+            <span className="text-[0.9rem] font-black tracking-tight text-white">Odoo Cafe</span>
+          </div>
+          <p className="text-xs mt-1 ml-10.5" style={{ color: '#6B7280' }}>Admin Panel</p>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-3">
-          {NAV_LINKS.map(({ label, to }) => (
+        {/* Nav links */}
+        <nav className="flex-1 overflow-y-auto py-3 space-y-0.5 px-2">
+          {NAV_LINKS.map(({ label, to, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
-                [
-                  'flex items-center px-4 py-2 text-sm font-medium transition-colors',
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-colors duration-150 ${
                   isActive
-                    ? 'bg-amber-50 text-amber-600 border-r-2 border-amber-400'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-                ].join(' ')
+                    ? 'text-[#1A1A1A]'
+                    : 'text-[#9CA3AF] hover:text-white'
+                }`
               }
+              style={({ isActive }) =>
+                isActive
+                  ? { background: '#F5C142' }
+                  : { background: 'transparent' }
+              }
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.classList.contains('active')) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (e.currentTarget.getAttribute('aria-current') !== 'page') {
+                  e.currentTarget.style.background = 'transparent';
+                }
+              }}
             >
+              <Icon size={16} strokeWidth={2} />
               {label}
             </NavLink>
           ))}
         </nav>
+
+        {/* Log out */}
+        <div className="p-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-colors duration-150"
+            style={{ color: '#9CA3AF' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.color = '#fff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#9CA3AF';
+            }}
+          >
+            <LogOut size={16} strokeWidth={2} />
+            Log out
+          </button>
+        </div>
       </aside>
 
-      {/* ── Main column ───────────────────────────────────────────── */}
+      {/* ── Main column ───────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 overflow-hidden">
 
         {/* Top bar */}
-        <header className="flex items-center justify-between h-14 px-6 bg-white border-b border-gray-200 flex-shrink-0">
-          <span className="text-base font-semibold tracking-tight text-gray-900">
-            Odoo Cafe POS
-          </span>
-          <button
-            onClick={logout}
-            className="px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-100"
-          >
-            Log out
-          </button>
+        <header className="flex items-center justify-between h-14 px-6 flex-shrink-0 border-b"
+                style={{ background: '#1A1A1A', borderColor: 'rgba(255,255,255,0.08)' }}>
+          <span className="text-sm font-bold text-white tracking-tight">Odoo Cafe POS</span>
+          <span className="text-xs font-bold uppercase tracking-widest"
+                style={{ color: '#F5C142' }}>Admin</span>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        {/* Page content — cream canvas */}
+        <main className="flex-1 overflow-y-auto p-8" style={{ background: 'var(--color-canvas)' }}>
           <Outlet />
         </main>
-
       </div>
     </div>
   );
