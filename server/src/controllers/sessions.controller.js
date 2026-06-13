@@ -32,7 +32,7 @@ export const openSession = async (req, res, next) => {
     if (activeSession) {
       return res.status(409).json({
         error: {
-          message: 'A session is already open',
+          message: 'Session already open',
           code: 'SESSION_ALREADY_OPEN',
         },
       });
@@ -46,7 +46,7 @@ export const openSession = async (req, res, next) => {
       if (dbErr.code === '23505') {
         return res.status(409).json({
           error: {
-            message: 'A session is already open',
+            message: 'Session already open',
             code: 'SESSION_ALREADY_OPEN',
           },
         });
@@ -71,7 +71,7 @@ export const closeSession = async (req, res, next) => {
     if (!activeSession) {
       return res.status(404).json({
         error: {
-          message: 'No open session found',
+          message: 'No open session',
           code: 'NO_OPEN_SESSION',
         },
       });
@@ -81,7 +81,7 @@ export const closeSession = async (req, res, next) => {
     if (!closedSession) {
       return res.status(404).json({
         error: {
-          message: 'No open session found',
+          message: 'No open session',
           code: 'NO_OPEN_SESSION',
         },
       });
@@ -106,4 +106,3 @@ export const getLastClosed = async (req, res, next) => {
     next(err);
   }
 };
-

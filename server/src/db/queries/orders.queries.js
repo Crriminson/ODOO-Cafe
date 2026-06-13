@@ -1,4 +1,4 @@
-import { db } from '../../config/db.js';
+import db from '../knex.js';
 import { computeOrderTotals } from '../../services/pricing.service.js';
 import { ORDER_STATUS, ORDER_TYPE } from '../../../../shared/constants/index.js';
 import { emitNewOrder } from '../../websocket/kds.emitter.js';
@@ -71,47 +71,50 @@ export const getOrderById = async (id, optionalClient) => {
  * Creates a new order in a single database transaction.
  */
 export const createOrder = async ({ sessionId, employeeId, orderType, tableId, customerId, items }) => {
-  // 1. Validate constraints
+  // 1. Validate table constraints
   validateTableConstraint(orderType, tableId);
 
-  if (!items || items.length === 0) {
-    const err = new Error('Order must contain at least one item');
-    err.code = 'EMPTY_ORDER';
-    throw err;
-  }
+  // Allow empty items on POST — the POS creates a draft order first,
+  // then adds items incrementally via PUT /orders/:id.
+  const hasItems = items && items.length > 0;
 
   return db.transaction(async (trx) => {
-    // 2. Fetch product catalogue prices and tax rates
-    const productIds = items.map(item => item.product_id);
-    const catalogRows = await trx('products')
-      .select('id', 'price', 'tax_rate')
-      .whereIn('id', productIds)
-      .where('is_active', true);
+    let mappedItems = [];
+    let totals = computeOrderTotals([], '0.00', '0.00', '0.00');
 
-    const catalogMap = new Map(catalogRows.map(p => [p.id, p]));
+    if (hasItems) {
+      // 2. Fetch product catalogue prices and tax rates (server-authoritative)
+      const productIds = items.map(item => item.product_id);
+      const catalogRows = await trx('products')
+        .select('id', 'price', 'tax_rate')
+        .whereIn('id', productIds)
+        .where('is_active', true);
 
-    // Check that all products exist in active catalogue
-    for (const item of items) {
-      if (!catalogMap.has(item.product_id)) {
-        const err = new Error(`Product ID ${item.product_id} is invalid or inactive`);
-        err.code = 'INVALID_PRODUCT';
-        throw err;
+      const catalogMap = new Map(catalogRows.map(p => [p.id, p]));
+
+      // Reject any product not in the active catalogue
+      for (const item of items) {
+        if (!catalogMap.has(item.product_id)) {
+          const err = new Error(`Product ID ${item.product_id} is invalid or inactive`);
+          err.code = 'INVALID_PRODUCT';
+          throw err;
+        }
       }
+
+      // 3. Map items — unit_price ALWAYS comes from catalogue, never the request body
+      mappedItems = items.map(item => {
+        const product = catalogMap.get(item.product_id);
+        return {
+          product_id: item.product_id,
+          unit_price: product.price.toString(),
+          quantity: item.quantity,
+          tax_rate: (parseFloat(product.tax_rate) / 100).toString(),
+        };
+      });
+
+      // 4. Compute totals via pricing service
+      totals = computeOrderTotals(mappedItems, '0.00', '0.00', '0.00');
     }
-
-    // 3. Map items to calculate pricing
-    const mappedItems = items.map(item => {
-      const product = catalogMap.get(item.product_id);
-      return {
-        product_id: item.product_id,
-        unit_price: product.price.toString(),
-        quantity: item.quantity,
-        tax_rate: (parseFloat(product.tax_rate) / 100).toString(),
-      };
-    });
-
-    // 4. Compute totals
-    const totals = computeOrderTotals(mappedItems, '0.00', '0.00', '0.00');
 
     // 5. Insert order row
     const [orderRow] = await trx('orders')
@@ -134,7 +137,7 @@ export const createOrder = async ({ sessionId, employeeId, orderType, tableId, c
 
     const orderId = orderRow.id;
 
-    // 6. Insert order items
+    // 6. Insert order items (skipped when items array is empty)
     for (const item of mappedItems) {
       const lineTotal = (parseFloat(item.unit_price) * item.quantity).toFixed(2);
       await trx('order_items').insert({
@@ -148,7 +151,7 @@ export const createOrder = async ({ sessionId, employeeId, orderType, tableId, c
       });
     }
 
-    // 7. Get the full nested order object
+    // 7. Return the full nested order object
     return getOrderById(orderId, trx);
   });
 };
@@ -201,53 +204,61 @@ export const updateOrder = async (id, { items, customerId, tableId }) => {
   // Validate table constraints based on existing orderType
   validateTableConstraint(currentOrder.order_type, tableId);
 
-  if (!items || items.length === 0) {
-    const err = new Error('Order must contain at least one item');
-    err.code = 'EMPTY_ORDER';
-    throw err;
-  }
+  // Allow empty items array — clears all items and zeroes totals.
+  // This happens when the cashier removes the last product before adding new ones.
+  const hasItems = items && items.length > 0;
 
   return db.transaction(async (trx) => {
-    // 1. Fetch products from DB
-    const productIds = items.map(item => item.product_id);
-    const catalogRows = await trx('products')
-      .select('id', 'price', 'tax_rate')
-      .whereIn('id', productIds)
-      .where('is_active', true);
-
-    const catalogMap = new Map(catalogRows.map(p => [p.id, p]));
-
-    for (const item of items) {
-      if (!catalogMap.has(item.product_id)) {
-        const err = new Error(`Product ID ${item.product_id} is invalid or inactive`);
-        err.code = 'INVALID_PRODUCT';
-        throw err;
-      }
-    }
-
-    // 2. Map items
-    const mappedItems = items.map(item => {
-      const product = catalogMap.get(item.product_id);
-      return {
-        product_id: item.product_id,
-        unit_price: product.price.toString(),
-        quantity: item.quantity,
-        tax_rate: (parseFloat(product.tax_rate) / 100).toString(),
-      };
-    });
-
-    // 3. Recompute totals (retains discount, loyalty discount, and tip)
-    const totals = computeOrderTotals(
-      mappedItems,
+    let mappedItems = [];
+    let totals = computeOrderTotals(
+      [],
       currentOrder.discount_total,
       currentOrder.loyalty_discount,
       currentOrder.tip
     );
 
-    // 4. Delete old items
+    if (hasItems) {
+      // 1. Fetch products from DB (server-authoritative pricing)
+      const productIds = items.map(item => item.product_id);
+      const catalogRows = await trx('products')
+        .select('id', 'price', 'tax_rate')
+        .whereIn('id', productIds)
+        .where('is_active', true);
+
+      const catalogMap = new Map(catalogRows.map(p => [p.id, p]));
+
+      for (const item of items) {
+        if (!catalogMap.has(item.product_id)) {
+          const err = new Error(`Product ID ${item.product_id} is invalid or inactive`);
+          err.code = 'INVALID_PRODUCT';
+          throw err;
+        }
+      }
+
+      // 2. Map items — unit_price from catalogue only, never request body
+      mappedItems = items.map(item => {
+        const product = catalogMap.get(item.product_id);
+        return {
+          product_id: item.product_id,
+          unit_price: product.price.toString(),
+          quantity: item.quantity,
+          tax_rate: (parseFloat(product.tax_rate) / 100).toString(),
+        };
+      });
+
+      // 3. Recompute totals (retains existing discount, loyalty discount, and tip)
+      totals = computeOrderTotals(
+        mappedItems,
+        currentOrder.discount_total,
+        currentOrder.loyalty_discount,
+        currentOrder.tip
+      );
+    }
+
+    // 4. DELETE old items (always) then re-insert new ones
     await trx('order_items').where({ order_id: id }).del();
 
-    // 5. Insert new items
+    // 5. Insert new items (loop skipped when mappedItems is empty)
     for (const item of mappedItems) {
       const lineTotal = (parseFloat(item.unit_price) * item.quantity).toFixed(2);
       await trx('order_items').insert({
@@ -261,19 +272,19 @@ export const updateOrder = async (id, { items, customerId, tableId }) => {
       });
     }
 
-    // 6. Update order fields
+    // 6. Update order totals and metadata
     await trx('orders')
       .where({ id })
       .update({
-        customer_id: customerId || null,
-        table_id: tableId || null,
+        customer_id: customerId !== undefined ? (customerId || null) : currentOrder.customer_id,
+        table_id: tableId !== undefined ? (tableId || null) : currentOrder.table_id,
         subtotal: totals.subtotal,
         tax_total: totals.tax_total,
         total: totals.total,
         updated_at: trx.fn.now(),
       });
 
-    // 7. Get full updated order within transaction
+    // 7. Return the full updated order within the transaction
     return getOrderById(id, trx);
   });
 };

@@ -1,16 +1,16 @@
-import { Routes, Route } from 'react-router-dom';
+import React from 'react';
+import { Route } from 'react-router-dom';
+import OrderTypeSelect from './pages/OrderTypeSelect/index.jsx';
+import TableView from './pages/TableView/index.jsx';
+import OrderView from './pages/OrderView/index.jsx';
 
-const PosRoutes = () => (
-  <Routes>
-    {/* === Session / OrderType / FloorPopup / TableView / OrderView / Orders — owner: P3 === */}
-    {/* <Route path="session" element={<Session />} /> */}
-    {/* <Route path="order" element={<OrderView />} /> */}
-    {/* <Route path="orders" element={<Orders />} /> */}
-    {/* <Route path="table-view" element={<TableView />} /> */}
-
-    {/* === Customers — owner: P4 === */}
-    {/* <Route path="customers" element={<Customers />} /> */}
-  </Routes>
+export default (
+  <>
+    // --- P3 routes start ---
+    <Route path="order-type" element={<OrderTypeSelect />} />
+    <Route path="tables" element={<TableView />} />
+    <Route path="order-view" element={<OrderView />} />
+    <Route path="order-view/:orderId" element={<OrderView />} />
+    // --- P3 routes end ---
+  </>
 );
-
-export default PosRoutes;

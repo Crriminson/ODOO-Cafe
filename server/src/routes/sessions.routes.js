@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { requireAuth, requireRole } from '../middleware/auth.middleware.js';
-import { ROLES } from '../../../shared/constants/index.js';
+import { requireAuth } from '../middleware/auth.middleware.js';
 import {
   getCurrentSession,
   openSession,
@@ -16,10 +15,10 @@ router.get('/current', requireAuth, getCurrentSession);
 // GET /sessions/last-closed -> requireAuth -> getLastClosed
 router.get('/last-closed', requireAuth, getLastClosed);
 
-// POST /sessions/open -> requireAuth, requireRole('employee') -> openSession
-router.post('/open', requireAuth, requireRole(ROLES.EMPLOYEE), openSession);
+// POST /sessions/open -> requireAuth -> openSession
+router.post('/open', requireAuth, openSession);
 
-// POST /sessions/close -> requireAuth, requireRole('employee') -> closeSession
-router.post('/close', requireAuth, requireRole(ROLES.EMPLOYEE), closeSession);
+// POST /sessions/close -> requireAuth -> closeSession
+router.post('/close', requireAuth, closeSession);
 
 export default router;
