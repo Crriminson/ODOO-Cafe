@@ -1,7 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
 
 /* ==========================================================================
    ODOO CAFE POS — Design Tokens (Editorial Flat-Bold)
@@ -13,8 +14,8 @@
   --color-surface:  #FFFFFF;
 
   /* Accent */
-  --color-accent:       #F5C142;
-  --color-accent-hover: #E0AE30;
+  --color-accent:       #714867;
+  --color-accent-hover: #5d3a55;
 
   /* Text */
   --color-text:             #1A1A1A;

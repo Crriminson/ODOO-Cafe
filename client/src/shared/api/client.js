@@ -50,7 +50,7 @@ const getMockResponse = (path, options) => {
   if (path.startsWith('/categories')) {
     return {
       categories: [
-        { id: 1, name: "Coffee", color: "#F5C142" },
+        { id: 1, name: "Coffee", color: "#714867" },
         { id: 2, name: "Bakery", color: "#10B981" }
       ]
     };

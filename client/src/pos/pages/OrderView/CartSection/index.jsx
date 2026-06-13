@@ -195,7 +195,7 @@ export default function CartSection() {
                 width: '32px',
                 height: '32px',
                 borderRadius: '8px',
-                background: '#F5C142',
+                background: '#714867',
                 border: '2px solid #1A1A1A',
                 display: 'flex',
                 alignItems: 'center',
@@ -481,7 +481,7 @@ export default function CartSection() {
               background:
                 items.length === 0 || !isDraft
                   ? '#E5E7EB'
-                  : '#F5C142',
+                  : '#714867',
               border: '2px solid #1A1A1A',
               borderRadius: '10px',
               color: '#1A1A1A',
@@ -541,3 +541,4 @@ export default function CartSection() {
     </>
   );
 }
+

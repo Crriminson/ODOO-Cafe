@@ -267,7 +267,7 @@ export default function ProductSection() {
             padding: '6px 14px',
             borderRadius: '8px',
             border: '2px solid #1A1A1A',
-            backgroundColor: selectedCategoryId === 'all' ? '#F5C142' : '#fff',
+            backgroundColor: selectedCategoryId === 'all' ? '#714867' : '#fff',
             color: '#1A1A1A',
             fontWeight: selectedCategoryId === 'all' ? 900 : 700,
             fontSize: '13px',
@@ -288,7 +288,7 @@ export default function ProductSection() {
         {/* Per-category tabs — color from API, never hardcoded */}
         {categories.map((cat) => {
           const isActive = selectedCategoryId === cat.id;
-          const tabColor = cat.color || '#F5C142';
+          const tabColor = cat.color || '#714867';
           const textColor = isActive ? getContrastColor(tabColor) : '#1A1A1A';
 
           return (
@@ -365,7 +365,7 @@ export default function ProductSection() {
           >
             {displayedProducts.map((product) => {
               const cat = categories.find((c) => c.id === product.category_id);
-              const catColor = cat?.color || '#F5C142';
+              const catColor = cat?.color || '#714867';
 
               return (
                 <button
@@ -432,3 +432,4 @@ export default function ProductSection() {
     </div>
   );
 }
+
