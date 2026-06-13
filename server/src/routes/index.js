@@ -45,7 +45,7 @@ router.use('/products',   productsRouter);
 router.use('/categories', categoriesRouter);
 router.use('/floors',     floorsRouter);
 router.use('/tables',     tablesRouter);
-router.use('/orders',     stub('Orders'));
+router.use('/orders',     (await import('./orders.routes.js')).default);
 router.use('/customers',  stub('Customers'));
 router.use('/sessions',   (await import('./sessions.routes.js')).default);
 router.use('/coupons',    stub('Coupons'));
