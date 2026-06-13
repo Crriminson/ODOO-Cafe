@@ -9,7 +9,11 @@ const app = express();
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
 app.use(cors({
-  origin:      env.CLIENT_URL,
+  origin: (origin, cb) => {
+    // Allow any localhost port in dev (Vite may pick 5174, 5175 …)
+    if (!origin || env.NODE_ENV === 'development') return cb(null, true);
+    cb(origin === env.CLIENT_URL ? null : new Error('CORS'), origin === env.CLIENT_URL);
+  },
   credentials: true,
 }));
 
