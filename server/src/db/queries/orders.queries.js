@@ -1,4 +1,4 @@
-import { query, getClient } from '../../config/db.js';
+import { db } from '../../config/db.js';
 import { computeOrderTotals } from '../../services/pricing.service.js';
 import { ORDER_STATUS, ORDER_TYPE } from '../../../../shared/constants/index.js';
 import { emitNewOrder } from '../../websocket/kds.emitter.js';
@@ -28,48 +28,42 @@ const validateTableConstraint = (orderType, tableId) => {
  * @returns {Promise<Object|null>}
  */
 export const getOrderById = async (id, optionalClient) => {
-  const db = optionalClient || { query: (text, params) => query(text, params) };
+  const q = optionalClient || db;
 
   // 1. Fetch order fields
-  const orderRes = await db.query(
-    `SELECT o.*, c.name AS customer_name
-     FROM orders o
-     LEFT JOIN customers c ON c.id = o.customer_id
-     WHERE o.id = $1`,
-    [id]
-  );
-  if (orderRes.rows.length === 0) {
+  const orders = await q('orders as o')
+    .leftJoin('customers as c', 'c.id', 'o.customer_id')
+    .where('o.id', id)
+    .select('o.*', 'c.name as customer_name')
+    .limit(1);
+
+  if (orders.length === 0) {
     return null;
   }
-  const order = orderRes.rows[0];
+  const order = orders[0];
 
   // 2. Fetch items joined with products
-  const itemsRes = await db.query(
-    `SELECT oi.*, p.name AS product_name, p.category_id
-     FROM order_items oi
-     JOIN products p ON p.id = oi.product_id
-     WHERE oi.order_id = $1
-     ORDER BY oi.id ASC`,
-    [id]
-  );
+  const items = await q('order_items as oi')
+    .join('products as p', 'p.id', 'oi.product_id')
+    .where('oi.order_id', id)
+    .select('oi.*', 'p.name as product_name', 'p.category_id')
+    .orderBy('oi.id', 'asc');
 
   // 3. Fetch payments
-  const paymentsRes = await db.query(
-    `SELECT * FROM payments WHERE order_id = $1 ORDER BY id ASC`,
-    [id]
-  );
+  const payments = await q('payments')
+    .where('order_id', id)
+    .orderBy('id', 'asc');
 
   // 4. Fetch discounts
-  const discountsRes = await db.query(
-    `SELECT * FROM order_discounts WHERE order_id = $1 ORDER BY id ASC`,
-    [id]
-  );
+  const discounts = await q('order_discounts')
+    .where('order_id', id)
+    .orderBy('id', 'asc');
 
   return {
     ...order,
-    items: itemsRes.rows,
-    payments: paymentsRes.rows,
-    discounts: discountsRes.rows,
+    items,
+    payments,
+    discounts,
   };
 };
 
@@ -86,18 +80,15 @@ export const createOrder = async ({ sessionId, employeeId, orderType, tableId, c
     throw err;
   }
 
-  const client = await getClient();
-  try {
-    await client.query('BEGIN');
-
+  return db.transaction(async (trx) => {
     // 2. Fetch product catalogue prices and tax rates
     const productIds = items.map(item => item.product_id);
-    const catalogRes = await client.query(
-      `SELECT id, price, tax_rate FROM products WHERE id = ANY($1) AND is_active = true`,
-      [productIds]
-    );
+    const catalogRows = await trx('products')
+      .select('id', 'price', 'tax_rate')
+      .whereIn('id', productIds)
+      .where('is_active', true);
 
-    const catalogMap = new Map(catalogRes.rows.map(p => [p.id, p]));
+    const catalogMap = new Map(catalogRows.map(p => [p.id, p]));
 
     // Check that all products exist in active catalogue
     for (const item of items) {
@@ -123,98 +114,71 @@ export const createOrder = async ({ sessionId, employeeId, orderType, tableId, c
     const totals = computeOrderTotals(mappedItems, '0.00', '0.00', '0.00');
 
     // 5. Insert order row
-    const orderInsertRes = await client.query(
-      `INSERT INTO orders (
-        session_id, employee_id, customer_id, table_id, order_type, status,
-        subtotal, tax_total, discount_total, tip, total, loyalty_points_redeemed, loyalty_discount
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, '0.00')
-      RETURNING id`,
-      [
-        sessionId,
-        employeeId,
-        customerId || null,
-        tableId || null,
-        orderType,
-        ORDER_STATUS.DRAFT,
-        totals.subtotal,
-        totals.tax_total,
-        totals.discount_total,
-        totals.tip,
-        totals.total,
-      ]
-    );
+    const [orderRow] = await trx('orders')
+      .insert({
+        session_id: sessionId,
+        employee_id: employeeId,
+        customer_id: customerId || null,
+        table_id: tableId || null,
+        order_type: orderType,
+        status: ORDER_STATUS.DRAFT,
+        subtotal: totals.subtotal,
+        tax_total: totals.tax_total,
+        discount_total: totals.discount_total,
+        tip: totals.tip,
+        total: totals.total,
+        loyalty_points_redeemed: 0,
+        loyalty_discount: '0.00',
+      })
+      .returning('id');
 
-    const orderId = orderInsertRes.rows[0].id;
+    const orderId = orderRow.id;
 
     // 6. Insert order items
     for (const item of mappedItems) {
       const lineTotal = (parseFloat(item.unit_price) * item.quantity).toFixed(2);
-      await client.query(
-        `INSERT INTO order_items (
-          order_id, product_id, quantity, unit_price, line_total, kds_status, is_item_completed
-        ) VALUES ($1, $2, $3, $4, $5, 'to_cook', false)`,
-        [
-          orderId,
-          item.product_id,
-          item.quantity,
-          item.unit_price,
-          lineTotal,
-        ]
-      );
+      await trx('order_items').insert({
+        order_id: orderId,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        line_total: lineTotal,
+        kds_status: 'to_cook',
+        is_item_completed: false,
+      });
     }
 
     // 7. Get the full nested order object
-    const fullOrder = await getOrderById(orderId, client);
-
-    await client.query('COMMIT');
-    return fullOrder;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+    return getOrderById(orderId, trx);
+  });
 };
 
 /**
  * Fetches filtered and searched orders.
  */
 export const getOrders = async ({ sessionId, status, search, tableId }) => {
-  const conditions = [];
-  const params = [];
+  const queryBuilder = db('orders as o')
+    .leftJoin('customers as c', 'c.id', 'o.customer_id')
+    .select('o.*', 'c.name as customer_name');
 
   if (sessionId) {
-    params.push(sessionId);
-    conditions.push(`o.session_id = $${params.length}`);
+    queryBuilder.where('o.session_id', sessionId);
   }
   if (status) {
-    params.push(status);
-    conditions.push(`o.status = $${params.length}`);
+    queryBuilder.where('o.status', status);
   }
   if (tableId) {
-    params.push(tableId);
-    conditions.push(`o.table_id = $${params.length}`);
+    queryBuilder.where('o.table_id', tableId);
   }
   if (search) {
-    params.push(`%${search}%`);
-    conditions.push(
-      `(LOWER(c.name) LIKE LOWER($${params.length}) 
-        OR o.id::text LIKE $${params.length} 
-        OR o.created_at::date::text LIKE $${params.length})`
-    );
+    queryBuilder.where(function() {
+      this.where('c.name', 'ilike', `%${search}%`)
+        .orWhereRaw('o.id::text LIKE ?', [`%${search}%`])
+        .orWhereRaw('o.created_at::date::text LIKE ?', [`%${search}%`]);
+    });
   }
 
-  let queryText = `
-    SELECT o.*, c.name AS customer_name
-    FROM orders o
-    LEFT JOIN customers c ON c.id = o.customer_id
-  `;
-  if (conditions.length > 0) {
-    queryText += ' WHERE ' + conditions.join(' AND ');
-  }
-  queryText += ' ORDER BY o.id DESC';
-
-  const { rows } = await query(queryText, params);
+  const rows = await queryBuilder.orderBy('o.id', 'desc');
   return { orders: rows };
 };
 
@@ -243,18 +207,15 @@ export const updateOrder = async (id, { items, customerId, tableId }) => {
     throw err;
   }
 
-  const client = await getClient();
-  try {
-    await client.query('BEGIN');
-
+  return db.transaction(async (trx) => {
     // 1. Fetch products from DB
     const productIds = items.map(item => item.product_id);
-    const catalogRes = await client.query(
-      `SELECT id, price, tax_rate FROM products WHERE id = ANY($1) AND is_active = true`,
-      [productIds]
-    );
+    const catalogRows = await trx('products')
+      .select('id', 'price', 'tax_rate')
+      .whereIn('id', productIds)
+      .where('is_active', true);
 
-    const catalogMap = new Map(catalogRes.rows.map(p => [p.id, p]));
+    const catalogMap = new Map(catalogRows.map(p => [p.id, p]));
 
     for (const item of items) {
       if (!catalogMap.has(item.product_id)) {
@@ -284,56 +245,37 @@ export const updateOrder = async (id, { items, customerId, tableId }) => {
     );
 
     // 4. Delete old items
-    await client.query(`DELETE FROM order_items WHERE order_id = $1`, [id]);
+    await trx('order_items').where({ order_id: id }).del();
 
     // 5. Insert new items
     for (const item of mappedItems) {
       const lineTotal = (parseFloat(item.unit_price) * item.quantity).toFixed(2);
-      await client.query(
-        `INSERT INTO order_items (
-          order_id, product_id, quantity, unit_price, line_total, kds_status, is_item_completed
-        ) VALUES ($1, $2, $3, $4, $5, 'to_cook', false)`,
-        [
-          id,
-          item.product_id,
-          item.quantity,
-          item.unit_price,
-          lineTotal,
-        ]
-      );
+      await trx('order_items').insert({
+        order_id: id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        line_total: lineTotal,
+        kds_status: 'to_cook',
+        is_item_completed: false,
+      });
     }
 
     // 6. Update order fields
-    await client.query(
-      `UPDATE orders
-       SET customer_id = $2,
-           table_id = $3,
-           subtotal = $4,
-           tax_total = $5,
-           total = $6,
-           updated_at = NOW()
-       WHERE id = $1`,
-      [
-        id,
-        customerId || null,
-        tableId || null,
-        totals.subtotal,
-        totals.tax_total,
-        totals.total,
-      ]
-    );
+    await trx('orders')
+      .where({ id })
+      .update({
+        customer_id: customerId || null,
+        table_id: tableId || null,
+        subtotal: totals.subtotal,
+        tax_total: totals.tax_total,
+        total: totals.total,
+        updated_at: trx.fn.now(),
+      });
 
     // 7. Get full updated order within transaction
-    const updatedOrder = await getOrderById(id, client);
-
-    await client.query('COMMIT');
-    return updatedOrder;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+    return getOrderById(id, trx);
+  });
 };
 
 /**
@@ -352,10 +294,12 @@ export const sendOrderToKitchen = async (id) => {
   }
 
   // Update status to 'sent'
-  await query(
-    `UPDATE orders SET status = $2, updated_at = NOW() WHERE id = $1`,
-    [id, ORDER_STATUS.SENT]
-  );
+  await db('orders')
+    .where({ id })
+    .update({
+      status: ORDER_STATUS.SENT,
+      updated_at: db.fn.now(),
+    });
 
   // Fetch full order with items for KDS payload
   const fullOrder = await getOrderById(id);
@@ -382,7 +326,7 @@ export const deleteOrder = async (id) => {
   }
 
   // Hard delete
-  await query(`DELETE FROM orders WHERE id = $1`, [id]);
+  await db('orders').where({ id }).del();
 
   return { message: 'Order deleted' };
 };

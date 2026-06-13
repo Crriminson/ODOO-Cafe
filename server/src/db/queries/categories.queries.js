@@ -1,78 +1,70 @@
-import { query } from '../../config/db.js';
+import { db } from '../../config/db.js';
 
 /**
  * Fetch all categories ordered alphabetically.
- * @returns {Promise<import('pg').QueryResult>}
  */
-export const getAllCategories = () =>
-  query(
-    `SELECT id, name, color, created_at, updated_at
-     FROM categories
-     ORDER BY name ASC`
-  );
+export const getAllCategories = async () => {
+  const rows = await db('categories')
+    .select('id', 'name', 'color', 'created_at', 'updated_at')
+    .orderBy('name', 'asc');
+  return { rows };
+};
 
 /**
  * Fetch a single category by id.
  */
-export const getCategoryById = (id) =>
-  query(
-    `SELECT id, name, color, created_at, updated_at
-     FROM categories
-     WHERE id = $1`,
-    [id]
-  );
+export const getCategoryById = async (id) => {
+  const rows = await db('categories')
+    .select('id', 'name', 'color', 'created_at', 'updated_at')
+    .where({ id });
+  return { rows };
+};
 
 /**
  * Insert a new category.
  */
-export const createCategory = (name, color) =>
-  query(
-    `INSERT INTO categories (name, color)
-     VALUES ($1, $2)
-     RETURNING id, name, color, created_at, updated_at`,
-    [name, color]
-  );
+export const createCategory = async (name, color) => {
+  const rows = await db('categories')
+    .insert({ name, color })
+    .returning(['id', 'name', 'color', 'created_at', 'updated_at']);
+  return { rows };
+};
 
 /**
  * Dynamic UPDATE — only touches the columns actually provided.
  * @param {number} id
  * @param {{ name?: string, color?: string }} fields
  */
-export const updateCategory = (id, fields) => {
-  const setClauses = [];
-  const values     = [];
-  let   paramIndex = 1;
+export const updateCategory = async (id, fields) => {
+  const updateFields = {};
 
   if (fields.name !== undefined) {
-    setClauses.push(`name = $${paramIndex++}`);
-    values.push(fields.name);
+    updateFields.name = fields.name;
   }
   if (fields.color !== undefined) {
-    setClauses.push(`color = $${paramIndex++}`);
-    values.push(fields.color);
+    updateFields.color = fields.color;
   }
 
   // Always bump updated_at
-  setClauses.push(`updated_at = NOW()`);
-  values.push(id);  // id is the last param
+  updateFields.updated_at = db.fn.now();
 
-  return query(
-    `UPDATE categories
-     SET ${setClauses.join(', ')}
-     WHERE id = $${paramIndex}
-     RETURNING id, name, color, created_at, updated_at`,
-    values
-  );
+  const rows = await db('categories')
+    .where({ id })
+    .update(updateFields)
+    .returning(['id', 'name', 'color', 'created_at', 'updated_at']);
+  return { rows };
 };
 
 /**
  * Hard-delete a category row.
  */
-export const deleteCategory = (id) =>
-  query(
-    `DELETE FROM categories WHERE id = $1 RETURNING id`,
-    [id]
-  );
+export const deleteCategory = async (id) => {
+  const rows = await db('categories')
+    .where({ id })
+    .del()
+    .returning('id');
+  return { rows };
+};
 
 /**
  * Returns true if a category with this name already exists.
@@ -84,13 +76,13 @@ export const deleteCategory = (id) =>
  * @returns {Promise<boolean>}
  */
 export const categoryNameExists = async (name, excludeId = null) => {
-  const { rows } = await query(
-    `SELECT 1 FROM categories
-     WHERE name = $1
-       AND ($2::int IS NULL OR id != $2)
-     LIMIT 1`,
-    [name, excludeId]
-  );
+  const queryBuilder = db('categories').where({ name }).limit(1);
+  
+  if (excludeId !== null) {
+    queryBuilder.whereNot({ id: excludeId });
+  }
+
+  const rows = await queryBuilder.select(1);
   return rows.length > 0;
 };
 
@@ -100,9 +92,9 @@ export const categoryNameExists = async (name, excludeId = null) => {
  * @returns {Promise<boolean>}
  */
 export const categoryHasProducts = async (id) => {
-  const { rows } = await query(
-    `SELECT 1 FROM products WHERE category_id = $1 LIMIT 1`,
-    [id]
-  );
+  const rows = await db('products')
+    .where({ category_id: id })
+    .limit(1)
+    .select(1);
   return rows.length > 0;
 };
