@@ -8,6 +8,7 @@ import PaymentMethods  from './pages/PaymentMethods/index.jsx';
 import FloorsAndTables from './pages/FloorsAndTables/index.jsx';
 import CouponsPromotions from './pages/CouponsPromotions/index.jsx';
 import Employees       from './pages/Employees/index.jsx';
+import Reports         from './pages/Reports/index.jsx';
 /* === end P2 block === */
 
 const AdminRoutes = () => (
@@ -30,6 +31,9 @@ const AdminRoutes = () => (
 
       {/* === Employees === */}
       <Route path="employees" element={<Employees />} />
+
+      {/* === Reports === */}
+      <Route path="reports" element={<Reports />} />
 
     </Route>
   </Routes>

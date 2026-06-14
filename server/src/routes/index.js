@@ -12,6 +12,7 @@ import couponsRouter from './coupons.routes.js';
 import promotionsRouter from './promotions.routes.js';
 import cooksRouter from './cooks.routes.js';
 import kdsRouter from './kds.routes.js';
+import reportsRouter from './reports.routes.js';
 
 const router = Router();
 
@@ -39,6 +40,6 @@ router.use('/promotions', promotionsRouter);
 router.use('/cooks', cooksRouter);
 router.use('/kds', kdsRouter);
 router.use('/employees', stub('Employees'));
-router.use('/reports', stub('Reports'));
+router.use('/reports', reportsRouter);
 
 export default router;
