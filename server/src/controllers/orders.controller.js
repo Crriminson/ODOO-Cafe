@@ -36,14 +36,21 @@ const handleOrderError = (err, res) => {
 export const createOrder = async (req, res, next) => {
   try {
     const employeeId = req.user.userId || req.user.id;
-    const { sessionId, orderType, tableId, customerId, items } = req.body;
+    // Accept both snake_case (from client/API contract) and camelCase
+    const {
+      session_id, sessionId,
+      order_type, orderType,
+      table_id,   tableId,
+      customer_id, customerId,
+      items,
+    } = req.body;
 
     const order = await dbCreateOrder({
-      sessionId,
+      sessionId:   session_id  ?? sessionId,
       employeeId,
-      orderType,
-      tableId,
-      customerId,
+      orderType:   order_type  ?? orderType,
+      tableId:     table_id    ?? tableId,
+      customerId:  customer_id ?? customerId,
       items,
     });
 
@@ -109,12 +116,17 @@ export const updateOrder = async (req, res, next) => {
   try {
     const { id } = req.params;
     const orderId = parseInt(id, 10);
-    const { items, customerId, tableId } = req.body;
+    // Accept both snake_case (from client/API contract) and camelCase
+    const {
+      items,
+      customer_id, customerId,
+      table_id,    tableId,
+    } = req.body;
 
     const order = await dbUpdateOrder(orderId, {
       items,
-      customerId,
-      tableId,
+      customerId: customer_id ?? customerId,
+      tableId:    table_id    ?? tableId,
     });
 
     if (!order) {
