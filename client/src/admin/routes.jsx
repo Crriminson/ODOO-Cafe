@@ -2,10 +2,12 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from './layout/AdminLayout.jsx';
 
 /* === P2-owned imports — do not edit outside P2 block === */
-import Products      from './pages/Products/index.jsx';
-import Categories    from './pages/Categories/index.jsx';
-import PaymentMethods from './pages/PaymentMethods/index.jsx';
+import Products        from './pages/Products/index.jsx';
+import Categories      from './pages/Categories/index.jsx';
+import PaymentMethods  from './pages/PaymentMethods/index.jsx';
 import FloorsAndTables from './pages/FloorsAndTables/index.jsx';
+import CouponsPromotions from './pages/CouponsPromotions/index.jsx';
+import Employees       from './pages/Employees/index.jsx';
 /* === end P2 block === */
 
 const AdminRoutes = () => (
@@ -24,10 +26,10 @@ const AdminRoutes = () => (
       <Route path="floors-tables"   element={<FloorsAndTables />} />
 
       {/* === Cooks & Coupons/Promotions — owner: P4 === */}
-      {/* <Route path="cooks" element={<Cooks />} /> */}
-      {/* <Route path="coupons-promotions" element={<CouponsPromotions />} /> */}
+      <Route path="coupons" element={<CouponsPromotions />} />
 
-      {/* === Employees, Reports, Settings — owner: TBD (round 2) === */}
+      {/* === Employees === */}
+      <Route path="employees" element={<Employees />} />
 
     </Route>
   </Routes>
