@@ -18,7 +18,7 @@ function Toggle({ on, onChange, label, disabled }) {
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!on)}
-      className="w-11 h-6 rounded-full border-2 border-[#1A1A1A] relative flex-shrink-0"
+      className="w-11 h-6 rounded-full border-2 border-[#1A1A1A] relative flex-shrink-0 overflow-hidden"
       style={{
         background: on ? '#F5C142' : '#fff',
         boxShadow: 'var(--shadow-md)',
@@ -31,8 +31,8 @@ function Toggle({ on, onChange, label, disabled }) {
         className="absolute top-0.5 w-4 h-4 rounded-full"
         style={{
           background: '#1A1A1A',
-          transform: on ? 'translateX(1.375rem)' : 'translateX(0.125rem)',
-          transition: 'transform 0.2s',
+          left: on ? 'calc(100% - 18px)' : '2px',
+          transition: 'left 0.2s',
         }}
       />
     </button>
