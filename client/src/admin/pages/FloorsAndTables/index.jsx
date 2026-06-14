@@ -174,29 +174,53 @@ function TableModal({ initial, floorId, onSave, onClose }) {
 
 /* ── table card ──────────────────────────────────────── */
 function TableCard({ table, onEdit, onDelete }) {
-  const occupied = table.has_active_order;
+  // Inactive tables never show the amber occupied colour — Off overrides everything
+  const occupied = table.is_active && Boolean(table.has_active_order);
+  const inactive  = !table.is_active;
+
   return (
-    <div className="border-2 border-[#1A1A1A] rounded-xl p-4 text-center relative hover:translate-y-[-2px] transition-transform duration-150 cursor-pointer"
-         style={{ background: occupied ? '#F5C142' : '#fff', boxShadow: 'var(--shadow-lg)' }}>
+    <div
+      className="border-2 border-[#1A1A1A] rounded-xl p-4 text-center relative hover:translate-y-[-2px] transition-transform duration-150"
+      style={{
+        background: occupied ? '#F5C142' : '#fff',
+        boxShadow: 'var(--shadow-lg)',
+        opacity: inactive ? 0.6 : 1,
+      }}
+    >
+      {/* Occupied dot — top-right, only when active AND has order */}
       {occupied && (
-        <span className="absolute top-2 right-2 text-xs font-bold bg-[#1A1A1A] text-white px-1.5 py-0.5 rounded">●</span>
+        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#1A1A1A]" />
       )}
-      {!table.is_active && (
-        <span className="absolute top-2 left-2 text-xs font-semibold px-1.5 py-0.5 rounded-full"
-              style={{ background: '#F3F4F6', color: '#6B7280' }}>Off</span>
+
+      {/* Off badge — top-right when inactive (no conflict with dot) */}
+      {inactive && (
+        <span
+          className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+          style={{ background: '#1A1A1A', color: '#fff' }}
+        >
+          Off
+        </span>
       )}
-      <p className="font-mono font-black text-2xl text-[#1A1A1A]">T{table.table_number}</p>
-      <p className="text-xs text-[#1A1A1A] flex items-center justify-center gap-1 mt-1">
+
+      <p className="font-mono font-black text-2xl text-[#1A1A1A] mt-1">T{table.table_number}</p>
+      <p className="text-xs text-[#6B7280] flex items-center justify-center gap-1 mt-1">
         <Users size={12} /> {table.seats} seats
       </p>
+
       {/* Actions */}
       <div className="flex items-center justify-center gap-2 mt-3">
-        <button aria-label={`Edit table ${table.table_number}`} onClick={() => onEdit(table)}
-                className="w-7 h-7 rounded-md border-2 border-[#1A1A1A] flex items-center justify-center hover:bg-[#F5F0E8] transition-colors">
+        <button
+          aria-label={`Edit table ${table.table_number}`}
+          onClick={() => onEdit(table)}
+          className="w-7 h-7 rounded-md border-2 border-[#1A1A1A] flex items-center justify-center hover:bg-[#F5F0E8] transition-colors"
+        >
           <Pencil size={11} strokeWidth={2} />
         </button>
-        <button aria-label={`Delete table ${table.table_number}`} onClick={() => onDelete(table)}
-                className="w-7 h-7 rounded-md border-2 border-[#1A1A1A] flex items-center justify-center hover:bg-[#FEF2F2] transition-colors">
+        <button
+          aria-label={`Delete table ${table.table_number}`}
+          onClick={() => onDelete(table)}
+          className="w-7 h-7 rounded-md border-2 border-[#1A1A1A] flex items-center justify-center hover:bg-[#FEF2F2] transition-colors"
+        >
           <Trash2 size={11} strokeWidth={2} style={{ color: '#EF4444' }} />
         </button>
       </div>
