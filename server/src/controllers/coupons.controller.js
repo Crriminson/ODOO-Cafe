@@ -112,38 +112,35 @@ export const remove = async (req, res, next) => {
 export const validateCoupon = async (req, res, next) => {
   try {
     const { code, orderTotal, order_total } = req.body;
-    const total = parseFloat(orderTotal ?? order_total ?? 0);
-
     if (!code) {
       return res.status(400).json({
-        error: { message: 'Coupon code is required', code: 'BAD_REQUEST' },
+        error: { message: 'Coupon code is required', code: 'VALIDATION_ERROR' },
       });
     }
 
     const coupon = await findValidCouponByCode(code);
     if (!coupon) {
       return res.status(400).json({
-        error: { message: 'Invalid or inactive coupon', code: 'INVALID_COUPON' },
+        error: { message: 'Invalid or inactive coupon code', code: 'INVALID_COUPON' },
       });
     }
 
-    // Calculate the discount amount
+    const total = parseFloat(orderTotal ?? order_total ?? 0);
+    const discountVal = parseFloat(coupon.discount_value);
     let discountAmount = 0;
-    const val = parseFloat(coupon.discount_value);
+
     if (coupon.discount_type === 'percentage') {
-      discountAmount = (total * val) / 100;
-    } else {
-      discountAmount = val;
+      discountAmount = (total * discountVal) / 100;
+    } else if (coupon.discount_type === 'fixed') {
+      discountAmount = Math.min(total, discountVal);
     }
-    // Cap discount amount at order total
-    discountAmount = Math.min(discountAmount, total);
 
     return res.status(200).json({
       coupon: {
         id: coupon.id,
         code: coupon.code,
         discount_type: coupon.discount_type,
-        discount_value: val.toFixed(2),
+        discount_value: discountVal.toFixed(2),
         discount_amount: discountAmount.toFixed(2),
       },
     });

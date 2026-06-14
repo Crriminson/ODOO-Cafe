@@ -502,4 +502,3 @@ export const payOrder = async (orderId, { method, amount, tip, transactionRefere
     };
   });
 };
-

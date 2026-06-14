@@ -94,10 +94,10 @@ body {
 
 
 /* ==========================================================================
-   POS LAYOUT & NAV BAR
+   POS LAYOUT & NAV BAR  —  spec §7.1
    ========================================================================== */
 
-/* Outer shell */
+/* ── Shell ──────────────────────────────────────────────────────────────── */
 .pos-layout {
   display: flex;
   flex-direction: column;
@@ -105,81 +105,279 @@ body {
   background: var(--color-canvas);
 }
 
-/* Sticky top bar */
-.pos-header {
+/* ── Top nav bar ────────────────────────────────────────────────────────── */
+.pnav {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 200;
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 0 20px;
-  height: 52px;
+  gap: 0;
+  height: 54px;
   background: #1A1A1A;
-  border-bottom: 3px solid #1A1A1A;
+  border-bottom: 3px solid #F5C142;
+  flex-shrink: 0;
+  padding: 0 12px;
+  overflow: visible;
+}
+
+/* ── Brand ──────────────────────────────────────────────────────────────── */
+.pnav-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 16px;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  margin-right: 8px;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+.pnav-brand-icon { font-size: 20px; line-height: 1; }
+.pnav-brand-text {
+  font-size: 11px;
+  font-weight: 900;
+  color: #F5C142;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ── Primary nav links ──────────────────────────────────────────────────── */
+.pnav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   flex-shrink: 0;
 }
 
-/* Brand */
-.pos-logo-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-right: auto;
-}
-
-.pos-logo-icon { font-size: 18px; line-height: 1; }
-
-.pos-logo-text {
-  font-size: 14px;
-  font-weight: 900;
-  color: #F5C142;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-/* Nav */
-.pos-nav { display: flex; align-items: center; gap: 4px; }
-
-.pos-nav-link {
+.pnav-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  font-size: 12px;
+  gap: 5px;
+  padding: 6px 11px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #9CA3AF;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.5);
   text-decoration: none;
   border: 2px solid transparent;
-  transition: color 0.12s, background 0.12s, border-color 0.12s;
   white-space: nowrap;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+  line-height: 1;
+  height: 34px;
 }
 
-.pos-nav-link:hover         { color: #fff; background: rgba(255,255,255,0.06); }
-.pos-nav-link--active       { color: #F5C142; border-color: #F5C142; background: rgba(245,193,66,0.08); }
+.pnav-link:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.07);
+}
 
-/* Log-out */
-.pos-logout-btn {
-  display: inline-flex;
+.pnav-link--active {
+  color: #F5C142;
+  border-color: #F5C142;
+  background: rgba(245,193,66,0.10);
+}
+
+/* ── Search bar ─────────────────────────────────────────────────────────── */
+.pnav-search {
+  display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  background: rgba(255,255,255,0.07);
+  border: 2px solid rgba(255,255,255,0.15);
+  padding: 0 10px;
+  height: 34px;
+  margin-left: 12px;
+  flex: 1;
+  max-width: 280px;
+  min-width: 140px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pnav-search--focused {
+  background: rgba(255,255,255,0.11);
+  border-color: #F5C142;
+}
+
+.pnav-search-icon { color: rgba(255,255,255,0.4); flex-shrink: 0; }
+
+.pnav-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
   font-size: 12px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  min-width: 0;
+}
+
+.pnav-search-input::placeholder { color: rgba(255,255,255,0.3); }
+
+/* hide browser-native clear button (type=search) */
+.pnav-search-input::-webkit-search-cancel-button { display: none; }
+
+.pnav-search-clear {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.1s;
+}
+.pnav-search-clear:hover { color: #fff; }
+
+/* ── Right cluster ──────────────────────────────────────────────────────── */
+.pnav-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding-left: 12px;
+  flex-shrink: 0;
+}
+
+/* Table badge */
+.pnav-table-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(245,193,66,0.12);
+  border: 1.5px solid #F5C142;
+  color: #F5C142;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #9CA3AF;
-  background: transparent;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: color 0.12s, border-color 0.12s, background 0.12s;
+  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 
-.pos-logout-btn:hover { color: #EF4444; border-color: #EF4444; background: rgba(239,68,68,0.06); }
+/* Employee chip */
+.pnav-employee {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 4px;
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.12);
+  cursor: default;
+}
 
-/* Content area */
+.pnav-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #F5C142;
+  color: #1A1A1A;
+  font-size: 10px;
+  font-weight: 900;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.pnav-employee-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Icon-only button (hamburger) */
+.pnav-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  border: 2px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+}
+.pnav-icon-btn:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.3);
+}
+
+/* ── Hamburger dropdown ─────────────────────────────────────────────────── */
+.pnav-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  background: #1E1E1E;
+  border: 2px solid #F5C142;
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.4);
+  z-index: 999;
+  min-width: 220px;
+  padding: 6px 0;
+  animation: pnav-dropdown-in 0.12s ease;
+}
+
+@keyframes pnav-dropdown-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.pnav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 16px;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: background 0.1s, color 0.1s;
+  font-family: 'Inter', sans-serif;
+}
+.pnav-dropdown-item:hover {
+  background: rgba(245,193,66,0.08);
+  color: #fff;
+}
+.pnav-dropdown-item--danger { color: rgba(239,68,68,0.8); }
+.pnav-dropdown-item--danger:hover {
+  background: rgba(239,68,68,0.08);
+  color: #EF4444;
+}
+
+/* Soon badge */
+.pnav-badge {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 5px;
+  background: rgba(245,193,66,0.15);
+  color: #F5C142;
+  border: 1px solid rgba(245,193,66,0.3);
+}
+
+/* ── Legacy class aliases (kept for any page still using them) ──────────── */
+/* Old nav-link classes redirect to new pnav-link styles */
+.pos-nav-link        { @apply pnav-link; }
+.pos-nav-link--active { @apply pnav-link--active; }
+.pos-logout-btn      { display:none; } /* subsumed by hamburger Log Out */
+
+/* ── Page content area ──────────────────────────────────────────────────── */
 .pos-main      { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .pos-container { flex: 1; display: flex; flex-direction: column; }
+

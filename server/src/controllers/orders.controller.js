@@ -24,6 +24,11 @@ const handleOrderError = (err, res) => {
       error: { message: err.message, code: err.code },
     });
   }
+  if (err.code === 'ORDER_NOT_SENT') {
+    return res.status(409).json({
+      error: { message: err.message, code: err.code },
+    });
+  }
   if (err.code === 'ORDER_NOT_DRAFT') {
     return res.status(409).json({
       error: { message: err.message, code: err.code },
@@ -193,9 +198,9 @@ export const deleteOrder = async (req, res, next) => {
 
 /**
  * POST /orders/:id/pay
- * Processes checkout payment.
+ * Processes payment for an order.
  */
-export const payOrder = async (req, res, next) => {
+export const payOrderController = async (req, res, next) => {
   try {
     const { id } = req.params;
     const orderId = parseInt(id, 10);
@@ -228,7 +233,6 @@ export const payOrder = async (req, res, next) => {
 
     return res.status(200).json(result);
   } catch (err) {
-    if (
       err.code === 'ORDER_NOT_SENT' ||
       err.code === 'INVALID_COUPON' ||
       err.code === 'INSUFFICIENT_LOYALTY_POINTS' ||
@@ -242,3 +246,11 @@ export const payOrder = async (req, res, next) => {
   }
 };
 
+=======
+    return res.status(200).json(result);
+  } catch (err) {
+    if (handleOrderError(err, res)) return;
+    next(err);
+  }
+};
+>>>>>>> origin/master

@@ -9,6 +9,9 @@ let state = {
   items: [],           // legacy — kept for backward compat
   currentOrder: null,  // full server-returned order object
   isCartLoading: false,
+  searchQuery: '',
+  couponCode: null,
+  discountPreview: null,
 
   // ─── Existing actions ────────────────────────────────────────────────
   setOrderType: (orderType) => {
@@ -22,6 +25,19 @@ let state = {
   },
   setItems: (items) => {
     updateState({ items });
+  },
+
+  // ─── Search ──────────────────────────────────────────────────────────
+  setSearchQuery: (searchQuery) => {
+    updateState({ searchQuery });
+  },
+
+  // ─── Coupon / discount ───────────────────────────────────────────────
+  setCoupon: (couponData) => {
+    updateState({ couponCode: couponData.code, discountPreview: couponData });
+  },
+  clearCoupon: () => {
+    updateState({ couponCode: null, discountPreview: null });
   },
 
   // ─── New: order object ───────────────────────────────────────────────
@@ -96,6 +112,8 @@ let state = {
       tableId: null,
       orderType: 'dine_in',
       isCartLoading: false,
+      couponCode: null,
+      discountPreview: null,
     });
   },
 };

@@ -119,10 +119,8 @@ export default function OrderView() {
     bootstrap();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Sync panelView back to 'cart' if order returns to draft ─────────
-  useEffect(() => {
-    if (currentOrder?.status === 'draft') setPanelView('cart');
-  }, [currentOrder?.status]);
+  // ─── No auto-reset: PaymentSection manages its own post-payment state
+  // (the panel stays showing the receipt until cashier clicks Back)
 
   // ─── Error state ──────────────────────────────────────────────────────
   if (initError) {
@@ -196,7 +194,7 @@ export default function OrderView() {
     </div>
   );
 
-  // ─── Right panel — toggles between Cart and Payment ───────────────────
+  // ─── Right panel — toggles between Cart and Payment ─────────────────────
   const RightPanel = (
     <div style={{
       width: 340, flexShrink: 0,
@@ -211,15 +209,20 @@ export default function OrderView() {
       ) : (
         <PaymentSection
           onBack={() => setPanelView('cart')}
+          onPaymentComplete={(order) => {
+            setCurrentOrder(order);
+            // Stay on payment panel to show receipt — cashier clicks Back when done
+          }}
         />
       )}
     </div>
   );
 
-  // ─── Mobile layout ────────────────────────────────────────────────────
+  // ─── Mobile layout ─────────────────────────────────────────────────
   if (isMobile) {
-    const isSent = currentOrder?.status === 'sent';
-    const mobileTabs = ['Products', 'Cart', ...(isSent ? ['Payment'] : [])];
+    // Payment tab available when there are items in the cart
+    const hasItems = (currentOrder?.items?.length ?? 0) > 0;
+    const mobileTabs = ['Products', 'Cart', ...(hasItems ? ['Payment'] : [])];
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>

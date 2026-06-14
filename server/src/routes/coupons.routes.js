@@ -7,11 +7,12 @@ import { createCouponSchema, updateCouponSchema } from '../utils/validators.js';
 
 const router = Router();
 
-// Endpoint for any authenticated employee to validate a coupon
-router.post('/validate', authenticate, validateCoupon);
+// Validate endpoint (accessible by employee/cashier)
+router.post('/validate', authenticate, requireRole('admin', 'employee'), validateCoupon);
 
 // Require admin role for all other coupon operations
 router.use(authenticate, requireRole('admin'));
+
 
 router.get('/', getCoupons);
 router.post('/', validate(createCouponSchema), create);

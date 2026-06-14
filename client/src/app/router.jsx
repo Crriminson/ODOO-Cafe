@@ -46,7 +46,7 @@ export default function AppRouter() {
 				<Route
 					path="/pos/*"
 					element={
-						<ProtectedRoute allowedRoles={[ROLES.EMPLOYEE]}>
+						<ProtectedRoute allowedRoles={[ROLES.EMPLOYEE, ROLES.ADMIN]}>
 							<PosRoutes />
 						</ProtectedRoute>
 					}

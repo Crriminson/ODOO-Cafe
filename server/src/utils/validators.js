@@ -51,24 +51,26 @@ export const updateCategorySchema = z.object({
 
 export const createProductSchema = z.object({
   name:                z.string().min(1).max(150),
-  category_id:         z.number().int().positive(),
+  category_id:         z.number().int().positive().optional().nullable(),
   price:               z.number().nonnegative(),
   unit_of_measure:     z.enum(['piece', 'kg', 'litre']),
   tax_rate:            z.number().min(0).max(100).default(0),
   description:         z.string().max(1000).optional().nullable(),
   estimated_prep_time: z.number().int().positive().optional().nullable(),
   show_on_kds:         z.boolean().default(true),
+  is_active:           z.boolean().default(true),
 });
 
 export const updateProductSchema = z.object({
   name:                z.string().min(1).max(150).optional(),
-  category_id:         z.number().int().positive().optional(),
+  category_id:         z.number().int().positive().optional().nullable(),
   price:               z.number().nonnegative().optional(),
   unit_of_measure:     z.enum(['piece', 'kg', 'litre']).optional(),
   tax_rate:            z.number().min(0).max(100).optional(),
   description:         z.string().max(1000).optional().nullable(),
   estimated_prep_time: z.number().int().positive().optional().nullable(),
   show_on_kds:         z.boolean().optional(),
+  is_active:           z.boolean().optional(),
 }).refine(
   (data) => Object.keys(data).length > 0,
   { message: 'At least one field must be provided' }
