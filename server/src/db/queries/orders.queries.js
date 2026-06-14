@@ -202,7 +202,8 @@ export const updateOrder = async (id, { items, customerId, tableId }) => {
   }
 
   // Validate table constraints based on existing orderType
-  validateTableConstraint(currentOrder.order_type, tableId);
+  validateTableConstraint(currentOrder.order_type, tableId ?? currentOrder.table_id);
+
 
   // Allow empty items array — clears all items and zeroes totals.
   // This happens when the cashier removes the last product before adding new ones.
