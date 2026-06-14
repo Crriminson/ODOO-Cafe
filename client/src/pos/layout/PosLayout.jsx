@@ -207,7 +207,6 @@ export default function PosLayout() {
           )}
         </div>
         ) : (
-          /* Employee: flex spacer keeps log-out at bottom */
           <div className="flex-1" />
         )}
 

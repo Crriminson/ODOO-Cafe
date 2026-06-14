@@ -431,6 +431,7 @@ export default function PaymentSection({ onBack }) {
           </div>
         </div>
       </Section>
+    </>
     );
   }
 
