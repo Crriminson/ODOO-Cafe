@@ -7,25 +7,24 @@ import useCartStore from '../../../shared/stores/useCartStore.js';
 import { createOrder, getOrderById } from '../../../shared/api/orders.api.js';
 import { getCurrentSession } from '../../../shared/api/sessions.api.js';
 
-// ─── Skeleton loader shaped like the 3-column layout ─────────────────────
+// ─── Skeleton: 2-col (Products | RightPanel) ─────────────────────────────────
 function OrderViewSkeleton() {
   return (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr auto',
-        gap: '16px',
-        height: 'calc(100vh - 80px)',
-        padding: '16px',
+        gridTemplateColumns: '1fr 340px',
+        height: '100%',
         backgroundColor: 'var(--color-canvas)',
       }}
     >
-      {[1, 2, 3].map((col) => (
+      {[1, 2].map((col) => (
         <div
           key={col}
           style={{
+            margin: 16,
             backgroundColor: '#E5E7EB',
-            borderRadius: '12px',
+            borderRadius: 12,
             animation: 'pulse 1.5s cubic-bezier(0.4,0,0.6,1) infinite',
           }}
         />
@@ -34,34 +33,55 @@ function OrderViewSkeleton() {
   );
 }
 
-// ─── Tab bar for small screens ────────────────────────────────────────────
-const TABS = ['Products', 'Cart', 'Payment'];
+// ─── Status badge helper ──────────────────────────────────────────────────────
+function StatusBadge({ status }) {
+  const map = {
+    draft:     { bg: '#FEF3C7', color: '#92400E', label: 'Draft' },
+    sent:      { bg: '#DBEAFE', color: '#1E40AF', label: 'Sent to Kitchen' },
+    paid:      { bg: '#D1FAE5', color: '#065F46', label: 'Paid' },
+    cancelled: { bg: '#F3F4F6', color: '#6B7280', label: 'Cancelled' },
+  };
+  const s = map[status] || map.cancelled;
+  return (
+    <span style={{
+      background: s.bg, color: s.color,
+      borderRadius: 999, padding: '2px 10px',
+      fontSize: 11, fontWeight: 600,
+    }}>
+      {s.label}
+    </span>
+  );
+}
 
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function OrderView() {
   const { orderId } = useParams();
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
 
   const { setCurrentOrder, clearCart, currentOrder } = useCartStore();
+  const orderType  = useCartStore((s) => s.orderType);
+  const tableId    = useCartStore((s) => s.tableId);
 
-  const orderType = useCartStore((s) => s.orderType);
-  const tableId = useCartStore((s) => s.tableId);
-
-  const [initError, setInitError] = useState(null);
+  const [initError,     setInitError]     = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [activeTab, setActiveTab] = useState('Products');
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
-  // Track initialization to avoid double-creating orders in StrictMode
+  // Right-panel toggle: 'cart' | 'payment'
+  const [panelView, setPanelView] = useState('cart');
+
+  // Mobile breakpoint
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [mobileTab, setMobileTab] = useState('Products'); // 'Products' | 'Cart' | 'Payment'
+
   const initialized = useRef(false);
 
-  // ─── Responsive listener ────────────────────────────────────────────
+  // ─── Responsive ──────────────────────────────────────────────────────
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 1024);
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
   }, []);
 
-  // ─── Bootstrap: load or create the order ───────────────────────────
+  // ─── Bootstrap ───────────────────────────────────────────────────────
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
@@ -71,28 +91,21 @@ export default function OrderView() {
       setInitError(null);
       try {
         if (orderId) {
-          // Existing order — fetch from server
           const res = await getOrderById(orderId);
           setCurrentOrder(res.order);
         } else {
-          // New order — first fetch current session id
           const sessionRes = await getCurrentSession();
-          const sessionId = sessionRes?.session?.id;
-
+          const sessionId  = sessionRes?.session?.id;
           if (!sessionId) {
-            // No open session — redirect back to session screen
             navigate('/pos/session', { replace: true });
             return;
           }
-
-          const body = {
+          const res = await createOrder({
             session_id: sessionId,
             order_type: orderType || 'takeaway',
-            table_id: tableId || null,
+            table_id:   tableId   || null,
             items: [],
-          };
-
-          const res = await createOrder(body);
+          });
           setCurrentOrder(res.order);
         }
       } catch (err) {
@@ -104,56 +117,35 @@ export default function OrderView() {
     };
 
     bootstrap();
-    // clearCart on unmount so stale order doesn't leak into next view
-    return () => {
-      // intentionally not clearing on unmount — user may navigate back
-    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Error state ────────────────────────────────────────────────────
+  // ─── Sync panelView back to 'cart' if order returns to draft ─────────
+  useEffect(() => {
+    if (currentOrder?.status === 'draft') setPanelView('cart');
+  }, [currentOrder?.status]);
+
+  // ─── Error state ──────────────────────────────────────────────────────
   if (initError) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: 'calc(100vh - 80px)',
-          backgroundColor: 'var(--color-canvas)',
-          padding: '24px',
-          gap: '16px',
-        }}
-      >
-        <div
-          style={{
-            background: 'var(--color-error-bg)',
-            border: '2px solid var(--color-error)',
-            borderRadius: '12px',
-            padding: '20px 24px',
-            maxWidth: '480px',
-            width: '100%',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px',
-          }}
-        >
-          <span style={{ fontSize: '20px' }}>⚠️</span>
-          <span style={{ color: 'var(--color-error)', fontWeight: 600, fontSize: '14px' }}>
-            {initError}
-          </span>
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', minHeight: '100%',
+        backgroundColor: 'var(--color-canvas)', padding: 24, gap: 16,
+      }}>
+        <div style={{
+          background: 'var(--color-error-bg)', border: '2px solid var(--color-error)',
+          borderRadius: 12, padding: '20px 24px', maxWidth: 480, width: '100%',
+          display: 'flex', alignItems: 'flex-start', gap: 12,
+        }}>
+          <span style={{ fontSize: 20 }}>⚠️</span>
+          <span style={{ color: 'var(--color-error)', fontWeight: 600, fontSize: 14 }}>{initError}</span>
         </div>
         <button
           onClick={() => navigate('/pos/order-type')}
           style={{
-            padding: '8px 18px',
-            fontWeight: 700,
-            fontSize: 13,
-            border: '2px solid #1A1A1A',
-            background: '#fff',
-            cursor: 'pointer',
-            boxShadow: '3px 3px 0 #1A1A1A',
-            fontFamily: 'inherit',
+            padding: '8px 18px', fontWeight: 700, fontSize: 13,
+            border: '2px solid #1A1A1A', background: '#fff',
+            cursor: 'pointer', boxShadow: '3px 3px 0 #1A1A1A', fontFamily: 'inherit',
           }}
         >
           ← Back to Order Type
@@ -162,198 +154,122 @@ export default function OrderView() {
     );
   }
 
-  // ─── Skeleton while order is being created / fetched ───────────────
-  if (isInitializing) {
-    return <OrderViewSkeleton />;
-  }
+  if (isInitializing) return <OrderViewSkeleton />;
 
-  // ─── Render: top bar + 3-col (desktop) or tab (mobile) ─────────────
-  return (
-    <>
-      {/* Top context bar */}
-      <div
-        style={{
-          backgroundColor: '#1A1A1A',
-          color: '#fff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '8px 16px',
-          fontSize: '13px',
-          gap: '12px',
-          flexWrap: 'wrap',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={() => {
-              clearCart();
-              navigate('/pos/order-type');
-            }}
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '6px',
-              color: '#fff',
-              padding: '4px 10px',
-              cursor: 'pointer',
-              fontSize: '12px',
-              fontWeight: 700,
-            }}
-            aria-label="Go back to order type selection"
-          >
-            ← Back
-          </button>
-          <span style={{ fontWeight: 900, fontSize: '14px' }}>
-            {currentOrder ? `Order #${currentOrder.id}` : 'New Order'}
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {/* Order type badge */}
-          <span
-            style={{
-              background: 'rgba(245,193,66,0.15)',
-              border: '1px solid #F5C142',
-              color: '#F5C142',
-              borderRadius: '6px',
-              padding: '3px 10px',
-              fontSize: '11px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            {currentOrder?.order_type === 'dine_in'
-              ? `🍽 Dine-In${tableId ? ` · T${tableId}` : ''}`
-              : '🥡 Takeaway'}
-          </span>
-
-          {/* Status badge */}
-          {currentOrder?.status && (
-            <span
-              style={{
-                background:
-                  currentOrder.status === 'draft'
-                    ? '#FEF3C7'
-                    : currentOrder.status === 'sent'
-                    ? '#DBEAFE'
-                    : currentOrder.status === 'paid'
-                    ? '#D1FAE5'
-                    : '#F3F4F6',
-                color:
-                  currentOrder.status === 'draft'
-                    ? '#92400E'
-                    : currentOrder.status === 'sent'
-                    ? '#1E40AF'
-                    : currentOrder.status === 'paid'
-                    ? '#065F46'
-                    : '#6B7280',
-                borderRadius: '999px',
-                padding: '2px 10px',
-                fontSize: '11px',
-                fontWeight: 600,
-              }}
-            >
-              {currentOrder.status === 'draft'
-                ? 'Draft'
-                : currentOrder.status === 'sent'
-                ? 'Sent to Kitchen'
-                : currentOrder.status === 'paid'
-                ? 'Paid'
-                : 'Cancelled'}
-            </span>
-          )}
-        </div>
+  // ─── Shared top context bar ───────────────────────────────────────────
+  const TopBar = (
+    <div style={{
+      backgroundColor: '#1A1A1A', color: '#fff',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '8px 16px', fontSize: 13, gap: 12, flexWrap: 'wrap',
+      flexShrink: 0,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button
+          onClick={() => { clearCart(); navigate('/pos/order-type'); }}
+          style={{
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.3)',
+            color: '#fff', padding: '4px 10px', cursor: 'pointer',
+            fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
+          }}
+          aria-label="Back to order type"
+        >
+          ← Back
+        </button>
+        <span style={{ fontWeight: 900, fontSize: 14 }}>
+          {currentOrder ? `Order #${currentOrder.id}` : 'New Order'}
+        </span>
       </div>
 
-      {/* Mobile tab bar */}
-      {isMobile && (
-        <div
-          style={{
-            display: 'flex',
-            borderBottom: '2px solid #1A1A1A',
-            backgroundColor: 'var(--color-canvas)',
-          }}
-        >
-          {TABS.map((tab) => (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{
+          background: 'rgba(245,193,66,0.15)', border: '1px solid #F5C142',
+          color: '#F5C142', padding: '3px 10px', fontSize: 11,
+          fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+        }}>
+          {currentOrder?.order_type === 'dine_in'
+            ? `🍽 Dine-In${tableId ? ` · T${tableId}` : ''}`
+            : '🥡 Takeaway'}
+        </span>
+        {currentOrder?.status && <StatusBadge status={currentOrder.status} />}
+      </div>
+    </div>
+  );
+
+  // ─── Right panel — toggles between Cart and Payment ───────────────────
+  const RightPanel = (
+    <div style={{
+      width: 340, flexShrink: 0,
+      borderLeft: '2px solid #1A1A1A',
+      display: 'flex', flexDirection: 'column',
+      height: '100%', overflow: 'hidden',
+    }}>
+      {panelView === 'cart' ? (
+        <CartSection
+          onProceedToPayment={() => setPanelView('payment')}
+        />
+      ) : (
+        <PaymentSection
+          onBack={() => setPanelView('cart')}
+        />
+      )}
+    </div>
+  );
+
+  // ─── Mobile layout ────────────────────────────────────────────────────
+  if (isMobile) {
+    const isSent = currentOrder?.status === 'sent';
+    const mobileTabs = ['Products', 'Cart', ...(isSent ? ['Payment'] : [])];
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        {TopBar}
+        {/* Tab bar */}
+        <div style={{ display: 'flex', borderBottom: '2px solid #1A1A1A', backgroundColor: 'var(--color-canvas)', flexShrink: 0 }}>
+          {mobileTabs.map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => setMobileTab(tab)}
               style={{
-                flex: 1,
-                padding: '12px',
-                border: 'none',
-                borderBottom: activeTab === tab ? '3px solid #F5C142' : '3px solid transparent',
-                backgroundColor: activeTab === tab ? '#fff' : 'transparent',
-                fontWeight: activeTab === tab ? 900 : 700,
-                fontSize: '13px',
-                color: '#1A1A1A',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                flex: 1, padding: '12px', border: 'none',
+                borderBottom: mobileTab === tab ? '3px solid #F5C142' : '3px solid transparent',
+                backgroundColor: mobileTab === tab ? '#fff' : 'transparent',
+                fontWeight: mobileTab === tab ? 900 : 700,
+                fontSize: 13, color: '#1A1A1A', cursor: 'pointer',
+                fontFamily: 'inherit',
               }}
             >
               {tab}
             </button>
           ))}
         </div>
-      )}
-
-      {/* Content area */}
-      {isMobile ? (
-        <div style={{ height: 'calc(100vh - 160px)', overflow: 'hidden' }}>
-          {activeTab === 'Products' && <ProductSection />}
-          {activeTab === 'Cart' && <CartSection />}
-          {activeTab === 'Payment' && <PaymentSection />}
+        {/* Tab content */}
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          {mobileTab === 'Products' && <ProductSection />}
+          {mobileTab === 'Cart' && (
+            <CartSection onProceedToPayment={() => { setMobileTab('Payment'); }} />
+          )}
+          {mobileTab === 'Payment' && (
+            <PaymentSection onBack={() => setMobileTab('Cart')} />
+          )}
         </div>
-      ) : (
-        /* Desktop 3-column layout: Products 5fr | Cart 4fr | Payment 3fr */
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '5fr 4fr 3fr',
-            height: 'calc(100vh - 120px)',
-            backgroundColor: 'var(--color-canvas)',
-            gap: '0',
-          }}
-        >
-          {/* Products column */}
-          <div
-            style={{
-              borderRight: '2px solid #1A1A1A',
-              overflowY: 'auto',
-            }}
-          >
-            <ProductSection />
-          </div>
+      </div>
+    );
+  }
 
-          {/* Cart column */}
-          <div
-            style={{
-              borderRight: '2px solid #1A1A1A',
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <CartSection />
-          </div>
-
-          {/* Payment column */}
-          <div
-            style={{
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <PaymentSection />
-          </div>
+  // ─── Desktop 2-column layout: Products | RightPanel ──────────────────
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {TopBar}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Products column */}
+        <div style={{ flex: 1, borderRight: '2px solid #1A1A1A', overflowY: 'auto' }}>
+          <ProductSection />
         </div>
-      )}
-    </>
+
+        {/* Right panel (Cart ↔ Payment) */}
+        {RightPanel}
+      </div>
+    </div>
   );
 }
-
-
-

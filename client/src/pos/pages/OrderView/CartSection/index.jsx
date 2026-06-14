@@ -266,7 +266,7 @@ function DiscountPopup({ isOpen, onClose, orderTotal }) {
 }
 
 // ─── Main CartSection ─────────────────────────────────────────────────────
-export default function CartSection() {
+export default function CartSection({ onProceedToPayment }) {
   const navigate = useNavigate();
 
   const currentOrder   = useCartStore((s) => s.currentOrder);
@@ -814,7 +814,6 @@ export default function CartSection() {
             )}
           </button>
 
-          {/* Delete Order — DANGER (draft only) */}
           {isDraft && (
             <button
               onClick={() => setIsDeleteModalOpen(true)}
@@ -831,9 +830,39 @@ export default function CartSection() {
                 opacity: isDeleting ? 0.5 : 1,
                 transition: 'all 0.15s ease',
                 minHeight: '44px',
+                fontFamily: 'inherit',
               }}
             >
               {isDeleting ? 'Deleting…' : 'Delete Order'}
+            </button>
+          )}
+
+          {/* Proceed to Payment — enabled only when sent to kitchen */}
+          {isSent && onProceedToPayment && (
+            <button
+              onClick={onProceedToPayment}
+              style={{
+                background: '#1A1A1A',
+                border: '2px solid #1A1A1A',
+                borderRadius: '10px',
+                color: '#F5C142',
+                fontWeight: 900,
+                fontSize: '14px',
+                padding: '14px 16px',
+                cursor: 'pointer',
+                boxShadow: '3px 3px 0px #F5C142',
+                transition: 'all 0.15s ease',
+                minHeight: '48px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                fontFamily: 'inherit',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              💳 Proceed to Payment
             </button>
           )}
         </div>

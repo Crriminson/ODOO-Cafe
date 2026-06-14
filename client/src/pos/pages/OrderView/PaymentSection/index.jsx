@@ -133,7 +133,7 @@ function ActionBtn({ children, onClick, disabled, variant = 'primary', small = f
 
 // ─── main component ───────────────────────────────────────────────────────────
 
-export default function PaymentSection() {
+export default function PaymentSection({ onBack }) {
   const currentOrder    = useCartStore((s) => s.currentOrder);
   const setCurrentOrder = useCartStore((s) => s.setCurrentOrder);
   const couponCode      = useCartStore((s) => s.couponCode);    // from DiscountPopup
@@ -258,44 +258,78 @@ export default function PaymentSection() {
     }
   };
 
-  // ─ Disabled / not-yet-payable states ─────────────────────────────────
+  // ─ Disabled / not-yet-payable states ───────────────────────────────────
   const isPaid    = currentOrder?.status === 'paid';
   const isPayable = currentOrder?.status === 'sent';
 
+  // ─ Back button strip (shared across all sub-states) ────────────────────
+  const BackBar = onBack ? (
+    <div style={{
+      display: 'flex', alignItems: 'center',
+      padding: '8px 12px',
+      borderBottom: '2px solid #1A1A1A',
+      background: '#F9F5F0',
+      flexShrink: 0,
+    }}>
+      <button
+        onClick={onBack}
+        style={{
+          background: 'transparent', border: '1.5px solid #1A1A1A',
+          padding: '4px 12px', fontSize: 12, fontWeight: 700,
+          cursor: 'pointer', fontFamily: 'inherit', color: '#1A1A1A',
+          display: 'flex', alignItems: 'center', gap: 4,
+        }}
+      >
+        ← Back to Cart
+      </button>
+      <span style={{ marginLeft: 12, fontSize: 12, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        Payment
+      </span>
+    </div>
+  ) : null;
+
   if (isPaid && step !== 'success') {
     return (
-      <Section>
-        <div style={{ textAlign: 'center', padding: '40px 16px' }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-          <p style={{ fontWeight: 900, fontSize: 18 }}>Already Paid</p>
-          <p style={{ color: '#6B7280', fontSize: 13, marginTop: 6 }}>
-            This order has been settled.
-          </p>
-        </div>
-      </Section>
+      <>
+        {BackBar}
+        <Section>
+          <div style={{ textAlign: 'center', padding: '40px 16px' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+            <p style={{ fontWeight: 900, fontSize: 18 }}>Already Paid</p>
+            <p style={{ color: '#6B7280', fontSize: 13, marginTop: 6 }}>
+              This order has been settled.
+            </p>
+          </div>
+        </Section>
+      </>
     );
   }
 
   if (!isPayable && step !== 'success') {
     return (
-      <Section>
-        <EmptyState
-          icon="💳"
-          title="Payment"
-          subtitle={
-            currentOrder?.status === 'draft'
-              ? 'Send the order to kitchen first'
-              : 'No active order'
-          }
-        />
-      </Section>
+      <>
+        {BackBar}
+        <Section>
+          <EmptyState
+            icon="💳"
+            title="Payment"
+            subtitle={
+              currentOrder?.status === 'draft'
+                ? 'Send the order to kitchen first'
+                : 'No active order'
+            }
+          />
+        </Section>
+      </>
     );
   }
 
   // ─── SUCCESS screen ───────────────────────────────────────────────────
   if (step === 'success') {
     return (
-      <Section>
+      <>
+        {BackBar}
+        <Section>
         <div
           style={{
             display: 'flex',
@@ -403,7 +437,9 @@ export default function PaymentSection() {
   // ─── PAYING screen ────────────────────────────────────────────────────
   if (step === 'paying') {
     return (
-      <Section>
+      <>
+        {BackBar}
+        <Section>
         <div
           style={{
             display: 'flex',
@@ -598,21 +634,25 @@ export default function PaymentSection() {
           </div>
         </div>
       </Section>
-    );
-  }
+    </>
+  );
+}
+
 
   // ─── IDLE screen — method selection ──────────────────────────────────
   return (
-    <Section>
-      {/* Order total */}
-      <div
-        style={{
-          background: '#1A1A1A',
-          color: '#F5C142',
-          padding: '16px',
-          textAlign: 'center',
-          borderBottom: '2px solid #1A1A1A',
-        }}
+    <>
+      {BackBar}
+      <Section>
+        {/* Order total */}
+        <div
+          style={{
+            background: '#1A1A1A',
+            color: '#F5C142',
+            padding: '16px',
+            textAlign: 'center',
+            borderBottom: '2px solid #1A1A1A',
+          }}
       >
         <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.7, marginBottom: 4 }}>
           Amount Due
@@ -685,6 +725,7 @@ export default function PaymentSection() {
         </div>
       </div>
     </Section>
+  </>
   );
 }
 
