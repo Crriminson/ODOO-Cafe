@@ -233,6 +233,7 @@ export const payOrderController = async (req, res, next) => {
 
     return res.status(200).json(result);
   } catch (err) {
+    if (
       err.code === 'ORDER_NOT_SENT' ||
       err.code === 'INVALID_COUPON' ||
       err.code === 'INSUFFICIENT_LOYALTY_POINTS' ||
@@ -245,12 +246,3 @@ export const payOrderController = async (req, res, next) => {
     next(err);
   }
 };
-
-=======
-    return res.status(200).json(result);
-  } catch (err) {
-    if (handleOrderError(err, res)) return;
-    next(err);
-  }
-};
->>>>>>> origin/master
