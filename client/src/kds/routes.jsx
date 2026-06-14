@@ -1,9 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
+import KitchenDisplay from './pages/KitchenDisplay/index.jsx';
 
 const KdsRoutes = () => (
   <Routes>
-    {/* === Kitchen Display — owner: P4 === */}
-    {/* <Route index element={<KitchenDisplay />} /> */}
+    {/* /kds — Kitchen Display System */}
+    <Route index element={<KitchenDisplay />} />
   </Routes>
 );
 
