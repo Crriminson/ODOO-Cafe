@@ -25,11 +25,11 @@ export const createProduct = async (req, res, next) => {
   try {
     const {
       name, category_id, price, unit_of_measure, tax_rate,
-      description, estimated_prep_time, show_on_kds,
+      description, estimated_prep_time, show_on_kds, is_active,
     } = req.body; // validated by zod
 
-    // Category must exist
-    if (!(await categoryExists(category_id))) {
+    // Category existence check — only when a category is provided
+    if (category_id != null && !(await categoryExists(category_id))) {
       return res.status(422).json({
         error: {
           message: 'Category not found',
@@ -40,8 +40,8 @@ export const createProduct = async (req, res, next) => {
     }
 
     const { rows } = await insertProduct({
-      name, category_id, price, unit_of_measure, tax_rate,
-      description, estimated_prep_time, show_on_kds,
+      name, category_id: category_id ?? null, price, unit_of_measure, tax_rate,
+      description, estimated_prep_time, show_on_kds, is_active,
     });
     return res.status(201).json({ product: rows[0] });
   } catch (err) {
@@ -63,9 +63,9 @@ export const updateProduct = async (req, res, next) => {
       });
     }
 
-    // 2. If category_id is being changed, verify it exists
+    // 2. If category_id is being changed to a non-null value, verify it exists
     const { category_id } = req.body;
-    if (category_id !== undefined && !(await categoryExists(category_id))) {
+    if (category_id != null && !(await categoryExists(category_id))) {
       return res.status(422).json({
         error: {
           message: 'Category not found',
@@ -79,7 +79,7 @@ export const updateProduct = async (req, res, next) => {
     const fields = {};
     const allowed = [
       'name', 'category_id', 'price', 'unit_of_measure',
-      'tax_rate', 'description', 'estimated_prep_time', 'show_on_kds',
+      'tax_rate', 'description', 'estimated_prep_time', 'show_on_kds', 'is_active',
     ];
     for (const key of allowed) {
       if (req.body[key] !== undefined) fields[key] = req.body[key];
