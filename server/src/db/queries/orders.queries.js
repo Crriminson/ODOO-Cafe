@@ -342,3 +342,65 @@ export const deleteOrder = async (id) => {
 
   return { message: 'Order deleted' };
 };
+
+/**
+ * Pays a draft order in a single transaction:
+ *   1. Verify status === 'draft' and order has items
+ *   2. Insert a payments row
+ *   3. Update order status → 'paid', apply tip if provided
+ *   4. Emit to KDS (kitchen finds out AFTER payment, not before)
+ *   5. Return the full updated order with change_due for cash
+ *
+ * @param {number} id  - Order ID
+ * @param {{ payment_method: string, amount_paid: string|number,
+ *            transaction_reference?: string, tip?: string|number }} paymentData
+ */
+export const payOrder = async (id, { payment_method, amount_paid, transaction_reference, tip }) => {
+  const currentOrder = await getOrderById(id);
+  if (!currentOrder) return null;
+
+  if (currentOrder.status !== ORDER_STATUS.DRAFT) {
+    const err = new Error('Only draft orders can be paid');
+    err.code = 'ORDER_NOT_DRAFT';
+    throw err;
+  }
+
+  if (!currentOrder.items || currentOrder.items.length === 0) {
+    const err = new Error('Cannot pay an empty order');
+    err.code = 'EMPTY_ORDER';
+    throw err;
+  }
+
+  const tipAmount  = parseFloat(tip || 0).toFixed(2);
+  const orderTotal = parseFloat(currentOrder.total);
+  const paid       = parseFloat(amount_paid);
+  const changeDue  = payment_method === 'cash'
+    ? Math.max(0, paid - orderTotal).toFixed(2)
+    : '0.00';
+
+  await db.transaction(async (trx) => {
+    // 1. Insert payment record
+    await trx('payments').insert({
+      order_id:              id,
+      method:                payment_method,
+      amount:                orderTotal.toFixed(2),
+      tip:                   tipAmount,
+      transaction_reference: transaction_reference || null,
+    });
+
+    // 2. Mark order paid + apply tip
+    await trx('orders').where({ id }).update({
+      status:     ORDER_STATUS.PAID,
+      tip:        tipAmount,
+      updated_at: trx.fn.now(),
+    });
+  });
+
+  // 3. Fetch the completed order
+  const fullOrder = await getOrderById(id);
+
+  // 4. Broadcast to KDS — kitchen only sees the order AFTER payment
+  emitNewOrder(fullOrder);
+
+  return { order: fullOrder, change_due: changeDue };
+};

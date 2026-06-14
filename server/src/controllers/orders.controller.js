@@ -5,6 +5,7 @@ import {
   updateOrder as dbUpdateOrder,
   sendOrderToKitchen as dbSendOrderToKitchen,
   deleteOrder as dbDeleteOrder,
+  payOrder as dbPayOrder,
 } from '../db/queries/orders.queries.js';
 
 /**
@@ -175,6 +176,48 @@ export const deleteOrder = async (req, res, next) => {
     const orderId = parseInt(id, 10);
 
     const result = await dbDeleteOrder(orderId);
+    if (!result) {
+      return res.status(404).json({
+        error: { message: 'Order not found', code: 'NOT_FOUND' },
+      });
+    }
+
+    return res.status(200).json(result);
+  } catch (err) {
+    if (handleOrderError(err, res)) return;
+    next(err);
+  }
+};
+
+/**
+ * POST /orders/:id/pay
+ * Accepts payment for a draft order, transitions it to paid,
+ * and broadcasts to KDS. Kitchen sees the order only after payment.
+ */
+export const payOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const orderId = parseInt(id, 10);
+    const {
+      payment_method,
+      amount_paid,
+      transaction_reference,
+      tip,
+    } = req.body;
+
+    if (!payment_method || !amount_paid) {
+      return res.status(400).json({
+        error: { message: 'payment_method and amount_paid are required', code: 'MISSING_FIELDS' },
+      });
+    }
+
+    const result = await dbPayOrder(orderId, {
+      payment_method,
+      amount_paid,
+      transaction_reference,
+      tip,
+    });
+
     if (!result) {
       return res.status(404).json({
         error: { message: 'Order not found', code: 'NOT_FOUND' },

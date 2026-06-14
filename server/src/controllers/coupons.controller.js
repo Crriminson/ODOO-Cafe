@@ -4,6 +4,7 @@ import {
   createCoupon,
   updateCoupon,
   deleteCoupon,
+  findValidCouponByCode,
 } from '../db/queries/coupons.queries.js';
 import { createCouponSchema } from '../utils/validators.js';
 
@@ -102,6 +103,56 @@ export const remove = async (req, res, next) => {
       });
     }
     res.json({ message: 'Coupon deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/v1/coupons/validate
+ * Requires auth (employee or admin). No side-effects.
+ *
+ * Body: { code: string, order_total: string|number }
+ * Returns the coupon metadata + computed discount_amount preview.
+ * Used by the POS Discount popup before payment.
+ */
+export const validateCoupon = async (req, res, next) => {
+  try {
+    const { code, order_total } = req.body;
+
+    if (!code || typeof code !== 'string' || !code.trim()) {
+      return res.status(422).json({
+        error: { message: 'Coupon code is required', code: 'VALIDATION_ERROR' },
+      });
+    }
+
+    const coupon = await findValidCouponByCode(code.trim());
+
+    if (!coupon) {
+      return res.status(404).json({
+        error: { message: 'Invalid or inactive coupon code', code: 'INVALID_COUPON' },
+      });
+    }
+
+    // Compute preview discount amount against the supplied order total
+    const total = parseFloat(order_total || 0);
+    let discountAmount = 0;
+    if (coupon.discount_type === 'percentage') {
+      discountAmount = (total * parseFloat(coupon.discount_value)) / 100;
+    } else {
+      // fixed
+      discountAmount = Math.min(parseFloat(coupon.discount_value), total);
+    }
+
+    return res.json({
+      coupon: {
+        id:             coupon.id,
+        code:           coupon.code,
+        discount_type:  coupon.discount_type,
+        discount_value: Number(coupon.discount_value).toFixed(2),
+        discount_amount: discountAmount.toFixed(2),
+      },
+    });
   } catch (err) {
     next(err);
   }

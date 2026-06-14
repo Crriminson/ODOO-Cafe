@@ -48,3 +48,13 @@ export const sendToKitchen = (id) => apiClient.post(`/orders/${id}/send`);
  * @returns {Promise<{ message: string }>}
  */
 export const deleteOrder = (id) => apiClient.delete(`/orders/${id}`);
+
+/**
+ * POST /orders/:id/pay
+ * Pays an order (status: sent → paid). Creates payment record.
+ * @param {string|number} id - Order ID
+ * @param {Object} body - { method, amount, tip?, transaction_reference?, coupon_code?, loyalty_points_to_redeem? }
+ * @returns {Promise<{ order, payment, change_due }>}
+ */
+export const payOrder = (id, body) => apiClient.post(`/orders/${id}/pay`, body);
+

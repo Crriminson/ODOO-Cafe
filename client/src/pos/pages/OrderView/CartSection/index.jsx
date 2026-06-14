@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useCartStore from '../../../../shared/stores/useCartStore.js';
 import Modal from '../../../../shared/components/Modal.jsx';
-import { sendToKitchen, deleteOrder } from '../../../../shared/api/orders.api.js';
+import { deleteOrder } from '../../../../shared/api/orders.api.js';
 import { validateCoupon } from '../../../../shared/api/coupons.api.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -278,8 +278,6 @@ export default function CartSection({ onProceedToPayment }) {
   const couponCode     = useCartStore((s) => s.couponCode);
   const discountPreview = useCartStore((s) => s.discountPreview);
 
-  const [isSending,         setIsSending]         = useState(false);
-  const [sendError,         setSendError]          = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen]  = useState(false);
   const [isDeleting,        setIsDeleting]         = useState(false);
   const [deleteError,       setDeleteError]        = useState(null);
@@ -303,21 +301,6 @@ export default function CartSection({ onProceedToPayment }) {
 
   const isDraft = currentOrder?.status === 'draft';
   const isSent  = currentOrder?.status === 'sent';
-
-  // ─── Send to kitchen ──────────────────────────────────────────────
-  const handleSendToKitchen = async () => {
-    if (!currentOrder?.id) return;
-    setIsSending(true);
-    setSendError(null);
-    try {
-      const res = await sendToKitchen(currentOrder.id);
-      setCurrentOrder(res.order);
-    } catch (err) {
-      setSendError(err.message || 'Failed to send order. Please try again.');
-    } finally {
-      setIsSending(false);
-    }
-  };
 
   // ─── Delete draft order ───────────────────────────────────────────
   const handleConfirmDelete = async () => {
@@ -776,44 +759,35 @@ export default function CartSection({ onProceedToPayment }) {
             </button>
           )}
 
-          {/* Send to Kitchen — PRIMARY */}
+          {/* 💳 Proceed to Payment — PRIMARY action, enabled for draft orders with items */}
           <button
-            onClick={handleSendToKitchen}
-            disabled={items.length === 0 || !isDraft || isSending || isCartLoading}
+            onClick={() => onProceedToPayment?.()}
+            disabled={items.length === 0 || !isDraft || isCartLoading}
             style={{
-              background: items.length === 0 || !isDraft ? '#E5E7EB' : '#F5C142',
+              background: items.length === 0 || !isDraft || isCartLoading ? '#E5E7EB' : '#1A1A1A',
               border: '2px solid #1A1A1A',
               borderRadius: '10px',
-              color: '#1A1A1A',
+              color: items.length === 0 || !isDraft || isCartLoading ? '#9CA3AF' : '#F5C142',
               fontWeight: 900,
               fontSize: '14px',
               padding: '14px 16px',
-              cursor:
-                items.length === 0 || !isDraft || isSending || isCartLoading
-                  ? 'not-allowed'
-                  : 'pointer',
-              opacity: items.length === 0 || !isDraft ? 0.5 : 1,
-              boxShadow: items.length === 0 || !isDraft ? 'none' : '3px 3px 0px #1A1A1A',
+              cursor: items.length === 0 || !isDraft || isCartLoading ? 'not-allowed' : 'pointer',
+              opacity: items.length === 0 || !isDraft ? 0.6 : 1,
+              boxShadow: items.length === 0 || !isDraft ? 'none' : '3px 3px 0px #F5C142',
               transition: 'all 0.15s ease',
-              minHeight: '48px',
+              minHeight: '52px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
+              fontFamily: 'inherit',
+              letterSpacing: '0.01em',
             }}
           >
-            {isSending ? (
-              <>
-                <SpinnerDot />
-                Sending…
-              </>
-            ) : isSent ? (
-              '✓ Sent to Kitchen'
-            ) : (
-              '🍳 Send to Kitchen'
-            )}
+            💳 Proceed to Payment
           </button>
 
+          {/* Delete Order — danger, draft only */}
           {isDraft && (
             <button
               onClick={() => setIsDeleteModalOpen(true)}
@@ -834,35 +808,6 @@ export default function CartSection({ onProceedToPayment }) {
               }}
             >
               {isDeleting ? 'Deleting…' : 'Delete Order'}
-            </button>
-          )}
-
-          {/* Proceed to Payment — enabled only when sent to kitchen */}
-          {isSent && onProceedToPayment && (
-            <button
-              onClick={onProceedToPayment}
-              style={{
-                background: '#1A1A1A',
-                border: '2px solid #1A1A1A',
-                borderRadius: '10px',
-                color: '#F5C142',
-                fontWeight: 900,
-                fontSize: '14px',
-                padding: '14px 16px',
-                cursor: 'pointer',
-                boxShadow: '3px 3px 0px #F5C142',
-                transition: 'all 0.15s ease',
-                minHeight: '48px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                fontFamily: 'inherit',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              💳 Proceed to Payment
             </button>
           )}
         </div>

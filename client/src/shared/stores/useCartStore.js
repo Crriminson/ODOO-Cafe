@@ -10,6 +10,12 @@ let state = {
   currentOrder: null,  // full server-returned order object
   isCartLoading: false,
 
+  // ─── Coupon (applied in Discount popup, sent to server at pay time) ──
+  couponCode:      null,  // string | null
+  discountPreview: null,  // { discount_amount, discount_type, discount_value, code } | null
+
+  // ─── Global product search (written by nav bar, read by ProductSection) ──
+  searchQuery: '',
   // ─── Existing actions ────────────────────────────────────────────────
   setOrderType: (orderType) => {
     updateState({ orderType });
@@ -22,6 +28,9 @@ let state = {
   },
   setItems: (items) => {
     updateState({ items });
+  },
+  setSearchQuery: (searchQuery) => {
+    updateState({ searchQuery });
   },
 
   // ─── New: order object ───────────────────────────────────────────────
@@ -96,7 +105,23 @@ let state = {
       tableId: null,
       orderType: 'dine_in',
       isCartLoading: false,
+      couponCode: null,
+      discountPreview: null,
+      searchQuery: '',
     });
+  },
+
+  /** Store a validated coupon so PaymentSection can send it at pay time */
+  setCoupon: ({ code, discount_amount, discount_type, discount_value }) => {
+    updateState({
+      couponCode: code,
+      discountPreview: { code, discount_amount, discount_type, discount_value },
+    });
+  },
+
+  /** Remove the applied coupon */
+  clearCoupon: () => {
+    updateState({ couponCode: null, discountPreview: null });
   },
 };
 
