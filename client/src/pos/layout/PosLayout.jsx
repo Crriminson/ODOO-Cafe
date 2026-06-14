@@ -79,6 +79,9 @@ export default function PosLayout() {
   const [settingsOpen,    setSettingsOpen]     = useState(false);
   const searchRef = useRef(null);
 
+  // Only admins see Settings links (admin/* routes are ProtectedRoute-guarded)
+  const isAdmin = user?.role === 'admin';
+
   const handleLogout = useCallback(async () => {
     await logout();
     navigate('/login', { replace: true });
@@ -163,8 +166,9 @@ export default function PosLayout() {
         {/* Divider */}
         <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0 12px' }} />
 
-        {/* Settings expandable section */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Settings expandable section — admin-only */}
+        {isAdmin ? (
+          <div className="flex-1 overflow-y-auto">
           <button
             onClick={() => setSettingsOpen((v) => !v)}
             className="w-full flex items-center gap-3 px-5 py-3 text-xs font-bold uppercase tracking-widest transition-colors"
@@ -202,6 +206,10 @@ export default function PosLayout() {
             </div>
           )}
         </div>
+        ) : (
+          /* Employee: flex spacer keeps log-out at bottom */
+          <div className="flex-1" />
+        )}
 
         {/* Employee chip + Log out */}
         <div className="p-3 border-t space-y-1" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
