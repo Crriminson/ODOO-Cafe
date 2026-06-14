@@ -3,6 +3,64 @@ import { test } from 'node:test';
 import { createServer } from 'node:http';
 
 const setupMocks = (t) => {
+  const knexMock = (() => {
+    const createTrx = () => {
+      const trx = new Proxy(function() {}, {
+        get(target, prop) {
+          if (prop === 'commit' || prop === 'rollback') {
+            return () => Promise.resolve();
+          }
+          const builder = new Proxy(function() {}, {
+            get(t, p) {
+              if (p === 'then') {
+                return (resolve) => resolve([]);
+              }
+              return builder;
+            },
+            apply(t, thisArg, args) {
+              return builder;
+            }
+          });
+          return builder;
+        },
+        apply(target, thisArg, args) {
+          const builder = new Proxy(function() {}, {
+            get(t, p) {
+              if (p === 'then') {
+                return (resolve) => resolve([]);
+              }
+              return builder;
+            },
+            apply(t, thisArg, args) {
+              return builder;
+            }
+          });
+          return builder;
+        }
+      });
+      return trx;
+    };
+
+    const handler = {
+      get(target, prop) {
+        if (prop === 'transaction') {
+          const trx = createTrx();
+          const transactionFn = () => trx;
+          transactionFn.then = (resolve) => resolve(trx);
+          return transactionFn;
+        }
+        if (prop === 'then') {
+          return (resolve) => resolve([]);
+        }
+        return new Proxy(function() {}, handler);
+      },
+      apply(target, thisArg, args) {
+        return new Proxy(function() {}, handler);
+      }
+    };
+    return new Proxy(function() {}, handler);
+  })();
+
   // Mock DB query
   const dbMock = {
     namedExports: {
@@ -21,6 +79,7 @@ const setupMocks = (t) => {
         },
         release: () => {},
       }),
+      db: knexMock,
     },
   };
   t.mock.module('../config/db.js', dbMock);
@@ -43,16 +102,31 @@ const setupMocks = (t) => {
 
   t.mock.module('../websocket/kds.emitter.js', {
     namedExports: {
-      emitStageUpdated: (...args) => {
-        if (globalThis.mockEmitStageUpdated) {
-          return globalThis.mockEmitStageUpdated(...args);
+      emitNewOrder: (...args) => globalThis.mockEmitNewOrder ? globalThis.mockEmitNewOrder(...args) : undefined,
+      emitOrderPaid: (...args) => globalThis.mockEmitOrderPaid ? globalThis.mockEmitOrderPaid(...args) : undefined,
+      emitCookAssigned: (...args) => globalThis.mockEmitCookAssigned ? globalThis.mockEmitCookAssigned(...args) : undefined,
+      emitStageUpdated: (...args) => globalThis.mockEmitStageUpdated ? globalThis.mockEmitStageUpdated(...args) : undefined,
+      emitItemCompleted: (...args) => globalThis.mockEmitItemCompleted ? globalThis.mockEmitItemCompleted(...args) : undefined,
+    },
+  });
+
+  t.mock.module('../db/queries/orders.queries.js', {
+    namedExports: {
+      payOrder: async (orderId, paymentDetails) => {
+        if (globalThis.mockPayOrder) {
+          return globalThis.mockPayOrder(orderId, paymentDetails);
         }
+        return {
+          order: { id: orderId, status: 'paid' },
+          change_due: '0.00',
+        };
       },
-      emitItemCompleted: (...args) => {
-        if (globalThis.mockEmitItemCompleted) {
-          return globalThis.mockEmitItemCompleted(...args);
-        }
-      },
+      getOrders: (...args) => globalThis.mockGetOrders ? globalThis.mockGetOrders(...args) : ({ rows: [] }),
+      createOrder: (...args) => globalThis.mockCreateOrder ? globalThis.mockCreateOrder(...args) : ({ rows: [] }),
+      getOrderById: (...args) => globalThis.mockGetOrderById ? globalThis.mockGetOrderById(...args) : ({ rows: [] }),
+      updateOrder: (...args) => globalThis.mockUpdateOrder ? globalThis.mockUpdateOrder(...args) : ({ rows: [] }),
+      sendOrderToKitchen: (...args) => globalThis.mockSendOrderToKitchen ? globalThis.mockSendOrderToKitchen(...args) : ({ rows: [] }),
+      deleteOrder: (...args) => globalThis.mockDeleteOrder ? globalThis.mockDeleteOrder(...args) : ({ rows: [] }),
     },
   });
 };
@@ -269,4 +343,45 @@ test('PUT/DELETE of nonexistent coupon returns 404', async (t) => {
   res = await makeRequest('/api/v1/coupons/999', 'DELETE');
   assert.equal(res.status, 404);
   assert.equal(res.data.error.code, 'NOT_FOUND');
+});
+
+test('POST /coupons/validate returns 200 and validates discount successfully', async (t) => {
+  setupMocks(t);
+  globalThis.mockQuery = async (sql, params) => {
+    if (sql.includes('FROM coupons') && sql.includes('LOWER(code)')) {
+      return {
+        rows: [
+          {
+            id: 1,
+            code: 'SAVE10',
+            discount_type: 'percentage',
+            discount_value: '10.00',
+          },
+        ],
+      };
+    }
+    return { rows: [] };
+  };
+
+  const res = await makeRequest('/api/v1/coupons/validate', 'POST', {
+    code: 'save10',
+    orderTotal: 100,
+  }, 'employee_token');
+
+  assert.equal(res.status, 200);
+  assert.equal(res.data.coupon.code, 'SAVE10');
+  assert.equal(res.data.coupon.discount_amount, '10.00');
+});
+
+test('POST /coupons/validate returns 400 for invalid coupon', async (t) => {
+  setupMocks(t);
+  globalThis.mockQuery = async () => ({ rows: [] });
+
+  const res = await makeRequest('/api/v1/coupons/validate', 'POST', {
+    code: 'bad_coupon',
+    orderTotal: 100,
+  }, 'employee_token');
+
+  assert.equal(res.status, 400);
+  assert.equal(res.data.error.code, 'INVALID_COUPON');
 });

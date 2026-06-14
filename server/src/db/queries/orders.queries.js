@@ -342,3 +342,164 @@ export const deleteOrder = async (id) => {
 
   return { message: 'Order deleted' };
 };
+
+/**
+ * Transition order status to paid, apply discounts/coupons/loyalty points,
+ * and create a payment record in a single transaction.
+ */
+export const payOrder = async (orderId, { method, amount, tip, transactionReference, couponCode, loyaltyPointsToRedeem }) => {
+  const order = await getOrderById(orderId);
+  if (!order) return null;
+
+  if (order.status !== ORDER_STATUS.SENT) {
+    const err = new Error('Only sent orders can be paid');
+    err.code = 'ORDER_NOT_SENT';
+    throw err;
+  }
+
+  return db.transaction(async (trx) => {
+    let finalDiscountTotal = parseFloat(order.discount_total || 0);
+    let finalLoyaltyDiscount = parseFloat(order.loyalty_discount || 0);
+    let finalLoyaltyPointsRedeemed = parseInt(order.loyalty_points_redeemed || 0, 10);
+
+    // 1. Handle Coupon Code
+    if (couponCode) {
+      const coupon = await trx('coupons')
+        .where({ code: couponCode.toUpperCase(), is_active: true })
+        .first();
+
+      if (!coupon) {
+        const err = new Error('Invalid or inactive coupon');
+        err.code = 'INVALID_COUPON';
+        throw err;
+      }
+
+      let discountVal = 0;
+      if (coupon.discount_type === 'percentage') {
+        discountVal = (parseFloat(order.subtotal) * parseFloat(coupon.discount_value)) / 100;
+      } else {
+        discountVal = parseFloat(coupon.discount_value);
+      }
+      discountVal = Math.min(discountVal, parseFloat(order.subtotal));
+      finalDiscountTotal += discountVal;
+
+      // Record coupon application
+      await trx('order_discounts').insert({
+        order_id: orderId,
+        coupon_id: coupon.id,
+        discount_type: coupon.discount_type,
+        discount_value: coupon.discount_value.toString(),
+        applied_amount: discountVal.toFixed(2),
+      });
+    }
+
+    // 2. Handle Loyalty Points Redemption
+    if (loyaltyPointsToRedeem > 0) {
+      if (!order.customer_id) {
+        const err = new Error('Customer is required for loyalty redemption');
+        err.code = 'CUSTOMER_REQUIRED';
+        throw err;
+      }
+
+      const redemptionRateSetting = await trx('app_settings')
+        .where({ key: 'loyalty_redemption_rate' })
+        .first();
+      const redemptionRate = redemptionRateSetting ? parseFloat(redemptionRateSetting.value) : 1.0;
+
+      const customer = await trx('customers').where({ id: order.customer_id }).first();
+      if (!customer || customer.loyalty_points < loyaltyPointsToRedeem) {
+        const err = new Error('Insufficient loyalty points');
+        err.code = 'INSUFFICIENT_LOYALTY_POINTS';
+        throw err;
+      }
+
+      const loyaltyDiscountVal = loyaltyPointsToRedeem * redemptionRate;
+      finalLoyaltyDiscount += loyaltyDiscountVal;
+      finalLoyaltyPointsRedeemed += loyaltyPointsToRedeem;
+
+      // Deduct customer points
+      await trx('customers')
+        .where({ id: order.customer_id })
+        .decrement('loyalty_points', loyaltyPointsToRedeem);
+
+      // Record loyalty transaction
+      await trx('loyalty_transactions').insert({
+        customer_id: order.customer_id,
+        order_id: orderId,
+        type: 'redeemed',
+        points: loyaltyPointsToRedeem,
+      });
+    }
+
+    // 3. Recalculate totals
+    const changeTip = parseFloat(tip || '0.00');
+    const totals = computeOrderTotals(
+      order.items,
+      finalDiscountTotal.toFixed(2),
+      finalLoyaltyDiscount.toFixed(2),
+      changeTip.toFixed(2)
+    );
+
+    const paidAmt = parseFloat(amount || totals.total);
+    let changeDue = '0.00';
+    if (method === 'cash') {
+      changeDue = Math.max(0, paidAmt - parseFloat(totals.total)).toFixed(2);
+    }
+
+    // Update orders table
+    await trx('orders')
+      .where({ id: orderId })
+      .update({
+        status: ORDER_STATUS.PAID,
+        discount_total: totals.discount_total,
+        loyalty_discount: totals.loyalty_discount,
+        loyalty_points_redeemed: finalLoyaltyPointsRedeemed,
+        tip: totals.tip,
+        total: totals.total,
+        updated_at: trx.fn.now(),
+      });
+
+    // Create payment record (amount field excludes tip for reporting)
+    const [payment] = await trx('payments')
+      .insert({
+        order_id: orderId,
+        method,
+        amount: totals.total,
+        tip: totals.tip,
+        transaction_reference: transactionReference || null,
+      })
+      .returning('*');
+
+    // 4. Award loyalty points on paid total
+    if (order.customer_id) {
+      const earningRateSetting = await trx('app_settings')
+        .where({ key: 'loyalty_points_rate' })
+        .first();
+      const earningRate = earningRateSetting ? parseFloat(earningRateSetting.value) : 10.0;
+      const pointsEarned = Math.floor(parseFloat(totals.total) / earningRate);
+
+      if (pointsEarned > 0) {
+        await trx('customers')
+          .where({ id: order.customer_id })
+          .increment('loyalty_points', pointsEarned);
+
+        await trx('loyalty_transactions').insert({
+          customer_id: order.customer_id,
+          order_id: orderId,
+          type: 'earned',
+          points: pointsEarned,
+        });
+      }
+    }
+
+    // Get final order view to return
+    const updatedOrder = await getOrderById(orderId, trx);
+
+    return {
+      order: updatedOrder,
+      payment,
+      change_due: changeDue,
+    };
+  });
+};
+

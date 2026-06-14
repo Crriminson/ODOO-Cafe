@@ -26,10 +26,36 @@ const createTransactionClient = (t, workloadRows, updateLog, options = {}) => ({
 });
 
 const loadModule = async (t, namedExports) => {
-  t.mock.module('../config/db.js', { namedExports });
+  const knexMock = (() => {
+    const builder = () => builder;
+    builder.select = () => builder;
+    builder.where = () => builder;
+    builder.limit = () => builder;
+    builder.orderBy = () => builder;
+    builder.first = () => builder;
+    builder.insert = () => builder;
+    builder.returning = () => builder;
+    builder.update = () => builder;
+    builder.decrement = () => builder;
+    builder.increment = () => builder;
+    builder.del = () => builder;
+    builder.then = (resolve) => resolve([]);
+    return builder;
+  })();
+
+  const mergedNamedExports = {
+    db: knexMock,
+    ...namedExports,
+  };
+
+  t.mock.module('../config/db.js', { namedExports: mergedNamedExports });
   t.mock.module('../websocket/kds.emitter.js', {
     namedExports: {
-      emitCookAssigned: () => {},
+      emitNewOrder: (...args) => globalThis.mockEmitNewOrder ? globalThis.mockEmitNewOrder(...args) : undefined,
+      emitOrderPaid: (...args) => globalThis.mockEmitOrderPaid ? globalThis.mockEmitOrderPaid(...args) : undefined,
+      emitStageUpdated: (...args) => globalThis.mockEmitStageUpdated ? globalThis.mockEmitStageUpdated(...args) : undefined,
+      emitItemCompleted: (...args) => globalThis.mockEmitItemCompleted ? globalThis.mockEmitItemCompleted(...args) : undefined,
+      emitCookAssigned: (...args) => globalThis.mockEmitCookAssigned ? globalThis.mockEmitCookAssigned(...args) : undefined,
     },
   });
   return import(`./cookAllocation.service.js?test=${encodeURIComponent(t.name)}`);

@@ -13,6 +13,64 @@ const clientMock = {
 };
 
 const setupMocks = (t) => {
+  const knexMock = (() => {
+    const createTrx = () => {
+      const trx = new Proxy(function() {}, {
+        get(target, prop) {
+          if (prop === 'commit' || prop === 'rollback') {
+            return () => Promise.resolve();
+          }
+          const builder = new Proxy(function() {}, {
+            get(t, p) {
+              if (p === 'then') {
+                return (resolve) => resolve([]);
+              }
+              return builder;
+            },
+            apply(t, thisArg, args) {
+              return builder;
+            }
+          });
+          return builder;
+        },
+        apply(target, thisArg, args) {
+          const builder = new Proxy(function() {}, {
+            get(t, p) {
+              if (p === 'then') {
+                return (resolve) => resolve([]);
+              }
+              return builder;
+            },
+            apply(t, thisArg, args) {
+              return builder;
+            }
+          });
+          return builder;
+        }
+      });
+      return trx;
+    };
+
+    const handler = {
+      get(target, prop) {
+        if (prop === 'transaction') {
+          const trx = createTrx();
+          const transactionFn = () => trx;
+          transactionFn.then = (resolve) => resolve(trx);
+          return transactionFn;
+        }
+        if (prop === 'then') {
+          return (resolve) => resolve([]);
+        }
+        return new Proxy(function() {}, handler);
+      },
+      apply(target, thisArg, args) {
+        return new Proxy(function() {}, handler);
+      }
+    };
+    return new Proxy(function() {}, handler);
+  })();
+
   // Mock DB query & client (for transactions)
   const dbMock = {
     namedExports: {
@@ -25,6 +83,7 @@ const setupMocks = (t) => {
       getClient: async () => {
         return clientMock;
       },
+      db: knexMock,
     },
   };
   t.mock.module('../config/db.js', dbMock);
@@ -42,6 +101,36 @@ const setupMocks = (t) => {
         }
         throw new Error('Invalid token');
       },
+    },
+  });
+
+  t.mock.module('../websocket/kds.emitter.js', {
+    namedExports: {
+      emitNewOrder: (...args) => globalThis.mockEmitNewOrder ? globalThis.mockEmitNewOrder(...args) : undefined,
+      emitOrderPaid: (...args) => globalThis.mockEmitOrderPaid ? globalThis.mockEmitOrderPaid(...args) : undefined,
+      emitCookAssigned: (...args) => globalThis.mockEmitCookAssigned ? globalThis.mockEmitCookAssigned(...args) : undefined,
+      emitStageUpdated: (...args) => globalThis.mockEmitStageUpdated ? globalThis.mockEmitStageUpdated(...args) : undefined,
+      emitItemCompleted: (...args) => globalThis.mockEmitItemCompleted ? globalThis.mockEmitItemCompleted(...args) : undefined,
+    },
+  });
+
+  t.mock.module('../db/queries/orders.queries.js', {
+    namedExports: {
+      payOrder: async (orderId, paymentDetails) => {
+        if (globalThis.mockPayOrder) {
+          return globalThis.mockPayOrder(orderId, paymentDetails);
+        }
+        return {
+          order: { id: orderId, status: 'paid' },
+          change_due: '0.00',
+        };
+      },
+      getOrders: (...args) => globalThis.mockGetOrders ? globalThis.mockGetOrders(...args) : ({ rows: [] }),
+      createOrder: (...args) => globalThis.mockCreateOrder ? globalThis.mockCreateOrder(...args) : ({ rows: [] }),
+      getOrderById: (...args) => globalThis.mockGetOrderById ? globalThis.mockGetOrderById(...args) : ({ rows: [] }),
+      updateOrder: (...args) => globalThis.mockUpdateOrder ? globalThis.mockUpdateOrder(...args) : ({ rows: [] }),
+      sendOrderToKitchen: (...args) => globalThis.mockSendOrderToKitchen ? globalThis.mockSendOrderToKitchen(...args) : ({ rows: [] }),
+      deleteOrder: (...args) => globalThis.mockDeleteOrder ? globalThis.mockDeleteOrder(...args) : ({ rows: [] }),
     },
   });
 };

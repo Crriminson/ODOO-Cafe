@@ -15,6 +15,7 @@ import QRCode from 'qrcode';
 import { getPaymentMethods } from '../../../../shared/api/settings.api.js';
 import { payOrder } from '../../../../shared/api/orders.api.js';
 import useCartStore from '../../../../shared/stores/useCartStore.js';
+import { useRazorpay } from '../../../../shared/hooks/useRazorpay.js';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) =>
@@ -138,6 +139,7 @@ export default function PaymentSection({ onBack }) {
   const setCurrentOrder = useCartStore((s) => s.setCurrentOrder);
   const couponCode      = useCartStore((s) => s.couponCode);    // from DiscountPopup
   const clearCoupon     = useCartStore((s) => s.clearCoupon);
+  const { initiatePayment } = useRazorpay();
 
   // ── step: 'idle' | 'paying' | 'success'
   const [step, setStep] = useState('idle');
@@ -256,6 +258,33 @@ export default function PaymentSection({ onBack }) {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleRazorpayPayment = () => {
+    if (!currentOrder?.id || submitting) return;
+    setError('');
+    setSubmitting(true);
+
+    initiatePayment({
+      amount:                  orderTotal,
+      posOrderId:              currentOrder.id,
+      customerName:            currentOrder.customer_name || '',
+      couponCode:              couponCode || null,
+      loyaltyPointsToRedeem:   0,
+      tip:                     '0.00',
+      onSuccess: (result) => {
+        setSubmitting(false);
+        setCurrentOrder(result.order);
+        setChangeDue(result.change_due || '0.00');
+        clearCoupon();
+        setReceiptEmail(result.order.customer_email || '');
+        setStep('success');
+      },
+      onFailure: (msg) => {
+        setSubmitting(false);
+        setError(msg);
+      },
+    });
   };
 
   // ─ Disabled / not-yet-payable states ───────────────────────────────────
@@ -541,20 +570,29 @@ export default function PaymentSection({ onBack }) {
             {/* ── CARD ── */}
             {selected === 'card' && (
               <>
+                <ActionBtn onClick={handleRazorpayPayment} disabled={submitting} variant="primary">
+                  {submitting ? 'Processing…' : '💳 Pay with Razorpay'}
+                </ActionBtn>
+
+                <div style={{ display: 'flex', alignItems: 'center', margin: '12px 0', gap: 10 }}>
+                  <div style={{ flex: 1, height: 1, backgroundColor: '#DDD' }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#999', textTransform: 'uppercase' }}>or manual entry</span>
+                  <div style={{ flex: 1, height: 1, backgroundColor: '#DDD' }} />
+                </div>
+
                 <Field
                   label="Transaction Reference"
                   type="text"
                   placeholder="e.g. TXN1234567890"
                   value={cardRef}
                   onChange={(e) => setCardRef(e.target.value)}
-                  autoFocus
                 />
-                <p style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.6 }}>
-                  Enter the reference number shown on the card terminal or UPI app confirmation.
+                <p style={{ fontSize: 11, color: '#6B7280', lineHeight: 1.6 }}>
+                  If using a physical card machine, enter the transaction reference from the receipt.
                 </p>
                 <div style={{ marginTop: 'auto' }}>
-                  <ActionBtn onClick={handlePay} disabled={!canPay() || submitting}>
-                    {submitting ? 'Processing…' : 'Confirm Card Payment'}
+                  <ActionBtn onClick={handlePay} disabled={!canPay() || submitting} variant="dark">
+                    {submitting ? 'Processing…' : 'Confirm Manual Card Payment'}
                   </ActionBtn>
                 </div>
               </>
@@ -563,7 +601,17 @@ export default function PaymentSection({ onBack }) {
             {/* ── UPI ── */}
             {selected === 'upi' && (
               <>
-                <p style={{ fontSize: 12, color: '#6B7280', textAlign: 'center' }}>
+                <ActionBtn onClick={handleRazorpayPayment} disabled={submitting} variant="primary">
+                  {submitting ? 'Processing…' : '📱 Pay online with Razorpay (UPI)'}
+                </ActionBtn>
+
+                <div style={{ display: 'flex', alignItems: 'center', margin: '12px 0', gap: 10 }}>
+                  <div style={{ flex: 1, height: 1, backgroundColor: '#DDD' }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#999', textTransform: 'uppercase' }}>or direct scan</span>
+                  <div style={{ flex: 1, height: 1, backgroundColor: '#DDD' }} />
+                </div>
+
+                <p style={{ fontSize: 11, color: '#6B7280', textAlign: 'center' }}>
                   Ask the customer to scan the QR code below using any UPI app.
                 </p>
 

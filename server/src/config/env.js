@@ -28,4 +28,8 @@ export const env = {
     secret:    process.env.JWT_SECRET || 'dev_fallback_secret_change_in_prod',
     expiresIn: '12h',
   },
+  RAZORPAY: {
+    keyId:     process.env.RAZORPAY_KEY_ID || 'rzp_test_DUMMY_KEY_123',
+    keySecret: process.env.RAZORPAY_KEY_SECRET || 'DUMMY_SECRET_XYZ',
+  },
 };

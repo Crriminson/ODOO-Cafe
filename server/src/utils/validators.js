@@ -141,17 +141,32 @@ export const updateCouponSchema = z.object({
 // ─── Promotions ──────────────────────────────────────────────────────────────
 
 export const createPromotionSchema = z.object({
+  name:             z.string().min(1, 'Name is required').max(100),
   applies_to:       z.enum(['product', 'order']),
   discount_type:    z.enum(['percentage', 'fixed']),
   discount_value:   z.number().positive(),
+  product_id:       z.number().int().positive().optional().nullable(),
   min_quantity:     z.number().int().positive().optional().nullable(),
   min_order_amount: z.number().nonnegative().optional().nullable(),
-});
+}).refine(
+  (data) => {
+    if (data.applies_to === 'product') {
+      return data.product_id !== undefined && data.product_id !== null;
+    }
+    return true;
+  },
+  {
+    message: 'product_id is required when promotion applies to product',
+    path: ['product_id'],
+  }
+);
 
 export const updatePromotionSchema = z.object({
+  name:             z.string().min(1).max(100).optional(),
   applies_to:       z.enum(['product', 'order']).optional(),
   discount_type:    z.enum(['percentage', 'fixed']).optional(),
   discount_value:   z.number().positive().optional(),
+  product_id:       z.number().int().positive().optional().nullable(),
   min_quantity:     z.number().int().positive().optional().nullable(),
   min_order_amount: z.number().nonnegative().optional().nullable(),
 }).refine(
@@ -162,13 +177,13 @@ export const updatePromotionSchema = z.object({
 // ─── Cooks ───────────────────────────────────────────────────────────────────
 
 export const createCookSchema = z.object({
-  name:         z.string().min(1).max(100),
-  category_ids: z.array(z.number().int().positive()).optional().default([]),
+  name:                 z.string().min(1).max(100),
+  category_preferences: z.array(z.number().int().positive()).optional().default([]),
 });
 
 export const updateCookSchema = z.object({
-  name:         z.string().min(1).max(100).optional(),
-  category_ids: z.array(z.number().int().positive()).optional(),
+  name:                 z.string().min(1).max(100).optional(),
+  category_preferences: z.array(z.number().int().positive()).optional(),
 }).refine(
   (data) => Object.keys(data).length > 0,
   { message: 'At least one field must be provided' }

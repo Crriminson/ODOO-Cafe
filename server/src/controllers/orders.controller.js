@@ -5,7 +5,10 @@ import {
   updateOrder as dbUpdateOrder,
   sendOrderToKitchen as dbSendOrderToKitchen,
   deleteOrder as dbDeleteOrder,
+  payOrder as dbPayOrder,
 } from '../db/queries/orders.queries.js';
+import { emitOrderPaid } from '../websocket/kds.emitter.js';
+
 
 /**
  * Handle errors common to orders module.
@@ -187,3 +190,55 @@ export const deleteOrder = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * POST /orders/:id/pay
+ * Processes checkout payment.
+ */
+export const payOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const orderId = parseInt(id, 10);
+    const {
+      method,
+      amount,
+      tip,
+      transaction_reference, transactionReference,
+      coupon_code, couponCode,
+      loyalty_points_to_redeem, loyaltyPointsToRedeem,
+    } = req.body;
+
+    const result = await dbPayOrder(orderId, {
+      method,
+      amount,
+      tip,
+      transactionReference: transaction_reference ?? transactionReference,
+      couponCode:           coupon_code ?? couponCode,
+      loyaltyPointsToRedeem: loyalty_points_to_redeem ?? loyaltyPointsToRedeem,
+    });
+
+    if (!result) {
+      return res.status(404).json({
+        error: { message: 'Order not found', code: 'NOT_FOUND' },
+      });
+    }
+
+    // Broadcast order payment to KDS screens
+    emitOrderPaid(orderId);
+
+    return res.status(200).json(result);
+  } catch (err) {
+    if (
+      err.code === 'ORDER_NOT_SENT' ||
+      err.code === 'INVALID_COUPON' ||
+      err.code === 'INSUFFICIENT_LOYALTY_POINTS' ||
+      err.code === 'CUSTOMER_REQUIRED'
+    ) {
+      return res.status(err.code === 'ORDER_NOT_SENT' ? 409 : 400).json({
+        error: { message: err.message, code: err.code },
+      });
+    }
+    next(err);
+  }
+};
+

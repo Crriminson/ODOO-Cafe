@@ -4,6 +4,7 @@ import {
   createCoupon,
   updateCoupon,
   deleteCoupon,
+  findValidCouponByCode,
 } from '../db/queries/coupons.queries.js';
 import { createCouponSchema } from '../utils/validators.js';
 
@@ -102,6 +103,50 @@ export const remove = async (req, res, next) => {
       });
     }
     res.json({ message: 'Coupon deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/v1/coupons/validate
+export const validateCoupon = async (req, res, next) => {
+  try {
+    const { code, orderTotal, order_total } = req.body;
+    const total = parseFloat(orderTotal ?? order_total ?? 0);
+
+    if (!code) {
+      return res.status(400).json({
+        error: { message: 'Coupon code is required', code: 'BAD_REQUEST' },
+      });
+    }
+
+    const coupon = await findValidCouponByCode(code);
+    if (!coupon) {
+      return res.status(400).json({
+        error: { message: 'Invalid or inactive coupon', code: 'INVALID_COUPON' },
+      });
+    }
+
+    // Calculate the discount amount
+    let discountAmount = 0;
+    const val = parseFloat(coupon.discount_value);
+    if (coupon.discount_type === 'percentage') {
+      discountAmount = (total * val) / 100;
+    } else {
+      discountAmount = val;
+    }
+    // Cap discount amount at order total
+    discountAmount = Math.min(discountAmount, total);
+
+    return res.status(200).json({
+      coupon: {
+        id: coupon.id,
+        code: coupon.code,
+        discount_type: coupon.discount_type,
+        discount_value: val.toFixed(2),
+        discount_amount: discountAmount.toFixed(2),
+      },
+    });
   } catch (err) {
     next(err);
   }

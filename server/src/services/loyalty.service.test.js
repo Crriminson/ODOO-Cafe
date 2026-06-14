@@ -2,7 +2,29 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 const loadModule = async (t, namedExports) => {
-  t.mock.module('../config/db.js', { namedExports });
+  const knexMock = (() => {
+    const builder = () => builder;
+    builder.select = () => builder;
+    builder.where = () => builder;
+    builder.limit = () => builder;
+    builder.orderBy = () => builder;
+    builder.first = () => builder;
+    builder.insert = () => builder;
+    builder.returning = () => builder;
+    builder.update = () => builder;
+    builder.decrement = () => builder;
+    builder.increment = () => builder;
+    builder.del = () => builder;
+    builder.then = (resolve) => resolve([]);
+    return builder;
+  })();
+
+  const mergedNamedExports = {
+    db: knexMock,
+    ...namedExports,
+  };
+
+  t.mock.module('../config/db.js', { namedExports: mergedNamedExports });
   return import(`./loyalty.service.js?test=${encodeURIComponent(t.name)}`);
 };
 

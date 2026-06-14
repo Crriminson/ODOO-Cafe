@@ -9,7 +9,7 @@
     "dev": "nodemon src/server.js",
     "migrate": "node src/db/migrate.js",
     "seed": "node -e \"import('./src/db/migrate.js').then(m => m.runSeeds())\"",
-    "test": "node --test --test-isolation=none --experimental-test-module-mocks src/db/queries/coupons.queries.test.js src/services/promotion.service.test.js src/services/loyalty.service.test.js src/services/cookAllocation.service.test.js src/routes/kds.routes.test.js src/routes/couponsPromotions.routes.test.js src/routes/customersCooks.routes.test.js"
+    "test": "node --test --test-isolation=none --experimental-test-module-mocks src/db/queries/coupons.queries.test.js src/services/promotion.service.test.js src/services/loyalty.service.test.js src/services/cookAllocation.service.test.js src/routes/kds.routes.test.js src/routes/couponsPromotions.routes.test.js src/routes/customersCooks.routes.test.js src/routes/payments.routes.test.js src/routes/orders.routes.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -19,6 +19,7 @@
     "jsonwebtoken": "^9.0.2",
     "knex": "^3.2.10",
     "pg": "^8.12.0",
+    "razorpay": "^2.9.6",
     "socket.io": "^4.7.5",
     "zod": "^3.23.8"
   },
