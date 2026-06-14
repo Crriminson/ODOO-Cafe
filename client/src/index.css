@@ -93,3 +93,93 @@ body {
 }
 
 
+/* ==========================================================================
+   POS LAYOUT & NAV BAR
+   ========================================================================== */
+
+/* Outer shell */
+.pos-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-canvas);
+}
+
+/* Sticky top bar */
+.pos-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 20px;
+  height: 52px;
+  background: #1A1A1A;
+  border-bottom: 3px solid #1A1A1A;
+  flex-shrink: 0;
+}
+
+/* Brand */
+.pos-logo-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+}
+
+.pos-logo-icon { font-size: 18px; line-height: 1; }
+
+.pos-logo-text {
+  font-size: 14px;
+  font-weight: 900;
+  color: #F5C142;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* Nav */
+.pos-nav { display: flex; align-items: center; gap: 4px; }
+
+.pos-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9CA3AF;
+  text-decoration: none;
+  border: 2px solid transparent;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.pos-nav-link:hover         { color: #fff; background: rgba(255,255,255,0.06); }
+.pos-nav-link--active       { color: #F5C142; border-color: #F5C142; background: rgba(245,193,66,0.08); }
+
+/* Log-out */
+.pos-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9CA3AF;
+  background: transparent;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+  white-space: nowrap;
+}
+
+.pos-logout-btn:hover { color: #EF4444; border-color: #EF4444; background: rgba(239,68,68,0.06); }
+
+/* Content area */
+.pos-main      { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.pos-container { flex: 1; display: flex; flex-direction: column; }

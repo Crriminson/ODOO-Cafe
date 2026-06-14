@@ -5,6 +5,7 @@ import OrderTypeSelect from './pages/OrderTypeSelect/index.jsx';
 import TableView from './pages/TableView/index.jsx';
 import OrderView from './pages/OrderView/index.jsx';
 import FloorPopup from './pages/FloorPopup/index.jsx';
+import Customers from './pages/Customers/index.jsx';
 import { getCurrentSession } from '../shared/api/sessions.api.js';
 
 /**
@@ -90,6 +91,7 @@ export default function PosRoutes() {
       <Route path="floor-popup"         element={<FloorPopup />} />
       <Route path="order-view"          element={<OrderView />} />
       <Route path="order-view/:orderId" element={<OrderView />} />
+      <Route path="customers"           element={<Customers />} />
 
       {/* Catch-all: any unknown /pos/* path bounces back to the gate */}
       <Route path="*" element={<Navigate to="/pos" replace />} />
