@@ -6,7 +6,16 @@ import { getCategories } from '../../../shared/api/categories.api.js';
 /* ── helpers ─────────────────────────────────────────── */
 const fmt = (v) => `₹${parseFloat(v || 0).toFixed(2)}`;
 
-const EMPTY_FORM = { name: '', category_id: '', price: '', is_active: true };
+const EMPTY_FORM = {
+  name:                '',
+  category_id:         '',
+  price:               '',
+  is_active:           true,
+  unit_of_measure:     'piece',   // required by Zod — enum: piece | kg | litre
+  tax_rate:            0,         // optional but send explicit default to avoid 422
+  show_on_kds:         true,      // optional — default true so kitchen sees it
+  estimated_prep_time: '',        // optional — send empty string, back-end accepts null
+};
 
 const inputCls =
   'border-2 rounded-lg px-3 py-2.5 text-sm w-full bg-white transition-colors duration-150 focus:outline-none';
@@ -64,7 +73,12 @@ function ConfirmModal({ product, onConfirm, onCancel }) {
 
 /* ── product form modal ──────────────────────────────── */
 function ProductModal({ initial, categories, onSave, onClose }) {
-  const [form, setForm] = useState(initial || EMPTY_FORM);
+  // Merge initial product into EMPTY_FORM so editing never wipes backend-only fields
+  const [form, setForm] = useState(
+    initial
+      ? { ...EMPTY_FORM, ...initial, category_id: initial.category_id ?? '' }
+      : EMPTY_FORM
+  );
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
@@ -82,10 +96,14 @@ function ProductModal({ initial, categories, onSave, onClose }) {
     setErr('');
     try {
       await onSave({
-        name: form.name.trim(),
-        category_id: form.category_id ? parseInt(form.category_id, 10) : null,
-        price: parseFloat(form.price),
-        is_active: form.is_active,
+        name:                form.name.trim(),
+        category_id:         form.category_id ? parseInt(form.category_id, 10) : null,
+        price:               parseFloat(form.price),
+        is_active:           form.is_active,
+        unit_of_measure:     form.unit_of_measure || 'piece',
+        tax_rate:            parseFloat(form.tax_rate ?? 0),
+        show_on_kds:         Boolean(form.show_on_kds),
+        estimated_prep_time: form.estimated_prep_time !== '' ? parseInt(form.estimated_prep_time, 10) : null,
       });
       onClose();
     } catch (ex) {
@@ -142,7 +160,54 @@ function ProductModal({ initial, categories, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Price */}
+          {/* Unit of measure + Tax rate row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className={labelCls}>Unit of Measure *</label>
+              <select className={inputCls} value={form.unit_of_measure} onChange={set('unit_of_measure')}
+                      style={{ borderColor: '#E5E7EB' }}
+                      onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
+                      onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}>
+                <option value="piece">Piece</option>
+                <option value="kg">Kg</option>
+                <option value="litre">Litre</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className={labelCls}>Tax Rate (%)</label>
+              <input className={inputCls} type="number" min="0" max="100" step="0.01"
+                     value={form.tax_rate} onChange={set('tax_rate')} placeholder="0"
+                     style={{ borderColor: '#E5E7EB' }}
+                     onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
+                     onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')} />
+            </div>
+          </div>
+
+          {/* KDS + Prep time row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className={labelCls}>Show on KDS</label>
+              <select className={inputCls}
+                      value={form.show_on_kds ? 'true' : 'false'}
+                      onChange={(e) => setForm((f) => ({ ...f, show_on_kds: e.target.value === 'true' }))}
+                      style={{ borderColor: '#E5E7EB' }}
+                      onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
+                      onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className={labelCls}>Prep Time (min)</label>
+              <input className={inputCls} type="number" min="0" step="1"
+                     value={form.estimated_prep_time ?? ''} onChange={set('estimated_prep_time')}
+                     placeholder="e.g. 5"
+                     style={{ borderColor: '#E5E7EB' }}
+                     onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
+                     onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')} />
+            </div>
+          </div>
+
           <div className="flex flex-col gap-1">
             <label className={labelCls}>Price (₹) *</label>
             <input className={inputCls} type="number" min="0" step="0.01" value={form.price}
