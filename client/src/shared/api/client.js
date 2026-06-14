@@ -25,26 +25,19 @@ const getMockResponse = (path, options) => {
     return { session: { id: 42, employee_id: 1, opened_at: new Date().toISOString() } };
   }
   if (path.startsWith('/floors')) {
+    // Offline fallback — no active orders so no misleading highlights
     return {
       floors: [
         {
           id: 1,
-          name: "Main Floor",
+          name: "Main Floor (offline)",
           tables: [
-            { id: 101, table_number: 1, seats: 4, is_active: true, has_active_order: false },
-            { id: 102, table_number: 2, seats: 2, is_active: true, has_active_order: true },
-            { id: 103, table_number: 3, seats: 6, is_active: false, has_active_order: false }
-          ]
+            { id: 101, table_number: 1, seats: 4, is_active: true,  has_active_order: false },
+            { id: 102, table_number: 2, seats: 2, is_active: true,  has_active_order: false },
+            { id: 103, table_number: 3, seats: 6, is_active: false, has_active_order: false },
+          ],
         },
-        {
-          id: 2,
-          name: "Terrace",
-          tables: [
-            { id: 201, table_number: 10, seats: 2, is_active: true, has_active_order: false },
-            { id: 202, table_number: 11, seats: 4, is_active: true, has_active_order: false }
-          ]
-        }
-      ]
+      ],
     };
   }
   if (path.startsWith('/categories')) {

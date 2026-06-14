@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Package, Tag, CreditCard, Layers, Ticket, Users, BarChart2, LogOut } from 'lucide-react';
+import { LayoutDashboard, Package, Tag, CreditCard, Layers, Ticket, Users, BarChart2, LogOut, ChefHat } from 'lucide-react';
 import { useAuth } from '../../shared/hooks/useAuth';
 
 const NAV_LINKS = [
@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { label: 'Categories',           to: '/admin/categories',      icon: Tag },
   { label: 'Payment Methods',      to: '/admin/payment-methods', icon: CreditCard },
   { label: 'Floors & Tables',      to: '/admin/floors-tables',   icon: Layers },
+  { label: 'Kitchen Staff',        to: '/admin/cooks',           icon: ChefHat },
   { label: 'Coupons & Promotions', to: '/admin/coupons',         icon: Ticket },
   { label: 'Employees',            to: '/admin/employees',       icon: Users },
   { label: 'Reports',              to: '/admin/reports',         icon: BarChart2 },

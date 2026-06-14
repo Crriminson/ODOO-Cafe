@@ -82,10 +82,10 @@ function ProductModal({ initial, categories, onSave, onClose }) {
     setErr('');
     try {
       await onSave({
-        ...form,
-        category_id: form.category_id ? parseInt(form.category_id) : null,
+        name: form.name.trim(),
+        category_id: form.category_id ? parseInt(form.category_id, 10) : null,
         price: parseFloat(form.price),
-        tax_rate: 0,
+        is_active: form.is_active,
       });
       onClose();
     } catch (ex) {

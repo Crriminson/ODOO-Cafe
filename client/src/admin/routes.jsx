@@ -9,14 +9,17 @@ import FloorsAndTables from './pages/FloorsAndTables/index.jsx';
 import CouponsPromotions from './pages/CouponsPromotions/index.jsx';
 import Employees       from './pages/Employees/index.jsx';
 import Reports         from './pages/Reports/index.jsx';
+import Cooks           from './pages/Cooks/index.jsx';
+import Dashboard       from './pages/Dashboard/index.jsx';
 /* === end P2 block === */
 
 const AdminRoutes = () => (
   <Routes>
     <Route element={<AdminLayout />}>
 
-      {/* === Dashboard — owner: P1 === */}
-      <Route index element={<Navigate to="products" replace />} />
+      {/* === Dashboard === */}
+      <Route index element={<Navigate to="dashboard" replace />} />
+      <Route path="dashboard" element={<Dashboard />} />
 
       {/* === Products & Categories — owner: P2 === */}
       <Route path="products"    element={<Products />} />
@@ -26,7 +29,10 @@ const AdminRoutes = () => (
       <Route path="payment-methods" element={<PaymentMethods />} />
       <Route path="floors-tables"   element={<FloorsAndTables />} />
 
-      {/* === Cooks & Coupons/Promotions — owner: P4 === */}
+      {/* === Cooks — kitchen staff === */}
+      <Route path="cooks" element={<Cooks />} />
+
+      {/* === Coupons / Promotions === */}
       <Route path="coupons" element={<CouponsPromotions />} />
 
       {/* === Employees === */}

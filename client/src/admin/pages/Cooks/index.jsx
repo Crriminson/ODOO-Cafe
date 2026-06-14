@@ -1,638 +1,420 @@
-import React, { useState, useEffect } from 'react';
-import {
-  getCooks,
-  createCook,
-  updateCook,
-  deleteCook,
-} from '../../../shared/api/cooks.api.js';
+import { useState, useEffect, useCallback } from 'react';
+import { ChefHat, Plus, Pencil, Trash2, Loader2, Search, Coffee } from 'lucide-react';
+import { getCooks, createCook, updateCook, deleteCook } from '../../../shared/api/cooks.api.js';
 import { getCategories } from '../../../shared/api/categories.api.js';
-import Modal from '../../../shared/components/Modal.jsx';
-import {
-  Search,
-  UserPlus,
-  Edit2,
-  Trash2,
-  Check,
-  X,
-  Plus,
-  Coffee,
-  AlertCircle,
-  ToggleLeft,
-  ToggleRight,
-} from 'lucide-react';
 
-export default function Cooks() {
-  const [cooks, setCooks] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+/* ── shared style tokens ───────────────────────────────── */
+const inputCls = 'border-2 rounded-lg px-3 py-2.5 text-sm w-full bg-white text-[#1A1A1A] transition-colors duration-150 focus:outline-none';
+const labelCls = 'text-xs font-bold uppercase tracking-widest text-[#1A1A1A]';
 
-  // Filter Active Status
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
-
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
-  const [formError, setFormError] = useState('');
-  const [formFields, setFormFields] = useState({
-    id: null,
-    name: '',
-    category_preferences: [], // array of category IDs
-    is_active: true,
-  });
-
-  const fetchData = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const cooksData = await getCooks();
-      setCooks(cooksData.cooks || []);
-
-      const catsData = await getCategories();
-      setCategories(catsData.categories || []);
-    } catch (err) {
-      setError(err.message || 'Failed to load cooks or categories.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+/* ── confirm delete modal ─────────────────────────────── */
+function ConfirmModal({ name, onConfirm, onCancel }) {
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  const openCreateModal = () => {
-    setModalMode('create');
-    setFormFields({ id: null, name: '', category_preferences: [], is_active: true });
-    setFormError('');
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (cook) => {
-    setModalMode('edit');
-    setFormFields({
-      id: cook.id,
-      name: cook.name,
-      category_preferences: cook.category_preferences.map((c) => c.id),
-      is_active: cook.is_active,
-    });
-    setFormError('');
-    setIsModalOpen(true);
-  };
-
-  const toggleCategorySelection = (categoryId) => {
-    setFormFields((prev) => {
-      const current = prev.category_preferences;
-      if (current.includes(categoryId)) {
-        return { ...prev, category_preferences: current.filter((id) => id !== categoryId) };
-      } else {
-        return { ...prev, category_preferences: [...current, categoryId] };
-      }
-    });
-  };
-
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    setFormError('');
-
-    const payload = {
-      name: formFields.name.trim(),
-      category_preferences: formFields.category_preferences,
-    };
-
-    try {
-      if (modalMode === 'create') {
-        await createCook(payload);
-      } else {
-        payload.is_active = formFields.is_active;
-        await updateCook(formFields.id, payload);
-      }
-      setIsModalOpen(false);
-      fetchData();
-    } catch (err) {
-      if (err.fields) {
-        setFormError(err.fields.map((f) => `${f.field}: ${f.message}`).join(', '));
-      } else {
-        setFormError(err.message || 'Action failed. Please check inputs.');
-      }
-    }
-  };
-
-  const handleToggleActive = async (cook) => {
-    setError('');
-    try {
-      await updateCook(cook.id, {
-        name: cook.name,
-        is_active: !cook.is_active,
-      });
-      fetchData();
-    } catch (err) {
-      setError(err.message || 'Failed to toggle active status');
-    }
-  };
-
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete kitchen profile for "${name}"? This will archive them.`)) {
-      return;
-    }
-    setError('');
-    try {
-      await deleteCook(id);
-      fetchData();
-    } catch (err) {
-      setError(err.message || 'Failed to delete cook');
-    }
-  };
-
-  // Filter cooks client-side by search and active status
-  const filteredCooks = cooks.filter((cook) => {
-    const matchesSearch = cook.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'active' && cook.is_active) ||
-      (statusFilter === 'inactive' && !cook.is_active);
-    return matchesSearch && matchesStatus;
-  });
-
-  const styles = {
-    container: {
-      backgroundColor: '#F5F0E8',
-      minHeight: '100vh',
-      padding: '40px 20px',
-      fontFamily: "'Outfit', 'Inter', sans-serif",
-      color: '#1A1A1A',
-    },
-    wrapper: {
-      maxWidth: '1200px',
-      margin: '0 auto',
-    },
-    header: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '30px',
-      borderBottom: '3px solid #1A1A1A',
-      paddingBottom: '20px',
-      gap: '20px',
-      flexWrap: 'wrap',
-    },
-    titleSection: {
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    title: {
-      fontSize: '36px',
-      fontWeight: '900',
-      textTransform: 'uppercase',
-      margin: 0,
-      letterSpacing: '-1px',
-    },
-    subtitle: {
-      fontSize: '16px',
-      color: '#666',
-      margin: '4px 0 0 0',
-    },
-    addButton: {
-      backgroundColor: '#F5C142',
-      color: '#1A1A1A',
-      border: '3px solid #1A1A1A',
-      padding: '12px 24px',
-      fontSize: '16px',
-      fontWeight: '800',
-      textTransform: 'uppercase',
-      cursor: 'pointer',
-      boxShadow: '4px 4px 0px #1A1A1A',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      transition: 'transform 0.1s, box-shadow 0.1s',
-    },
-    toolbar: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: '20px',
-      marginBottom: '30px',
-      flexWrap: 'wrap',
-    },
-    searchWrapper: {
-      position: 'relative',
-      flex: 1,
-      minWidth: '280px',
-    },
-    searchInput: {
-      width: '100%',
-      padding: '12px 16px 12px 42px',
-      fontSize: '16px',
-      border: '2px solid #1A1A1A',
-      borderRadius: '0px',
-      backgroundColor: '#FFF',
-      boxShadow: '3px 3px 0px #1A1A1A',
-      boxSizing: 'border-box',
-    },
-    searchIcon: {
-      position: 'absolute',
-      left: '14px',
-      top: '50%',
-      transform: 'translateY(-50%)',
-    },
-    filterTabs: {
-      display: 'flex',
-      border: '2px solid #1A1A1A',
-      boxShadow: '3px 3px 0px #1A1A1A',
-    },
-    filterTab: {
-      backgroundColor: '#FFF',
-      border: 'none',
-      borderRight: '2px solid #1A1A1A',
-      padding: '10px 20px',
-      fontSize: '14px',
-      fontWeight: 'bold',
-      cursor: 'pointer',
-      textTransform: 'uppercase',
-    },
-    activeFilterTab: {
-      backgroundColor: '#F5C142',
-    },
-    errorBanner: {
-      backgroundColor: '#FF6B6B',
-      color: '#FFF',
-      border: '3px solid #1A1A1A',
-      padding: '12px 20px',
-      marginBottom: '20px',
-      fontWeight: 'bold',
-      boxShadow: '4px 4px 0px #1A1A1A',
-    },
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-      gap: '24px',
-    },
-    card: {
-      backgroundColor: '#FFF',
-      border: '3px solid #1A1A1A',
-      boxShadow: '6px 6px 0px #1A1A1A',
-      padding: '24px',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      minHeight: '200px',
-    },
-    cardHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: '16px',
-      gap: '10px',
-    },
-    cookName: {
-      fontSize: '22px',
-      fontWeight: '900',
-      textTransform: 'uppercase',
-      margin: 0,
-    },
-    statusBadge: {
-      padding: '4px 8px',
-      fontSize: '11px',
-      fontWeight: 'bold',
-      textTransform: 'uppercase',
-      border: '2px solid #1A1A1A',
-    },
-    prefsTitle: {
-      fontSize: '13px',
-      fontWeight: '800',
-      textTransform: 'uppercase',
-      color: '#666',
-      marginBottom: '8px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '4px',
-    },
-    chipsContainer: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '8px',
-      marginBottom: '24px',
-    },
-    chip: {
-      padding: '6px 12px',
-      fontSize: '13px',
-      fontWeight: 'bold',
-      border: '2px solid #1A1A1A',
-      color: '#1A1A1A',
-    },
-    cardActions: {
-      display: 'flex',
-      gap: '10px',
-      marginTop: 'auto',
-      borderTop: '2px solid #1A1A1A',
-      paddingTop: '16px',
-    },
-    actionBtn: {
-      flex: 1,
-      backgroundColor: '#FFF',
-      color: '#1A1A1A',
-      border: '2px solid #1A1A1A',
-      padding: '8px 12px',
-      fontWeight: 'bold',
-      fontSize: '13px',
-      textTransform: 'uppercase',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '6px',
-      boxShadow: '2px 2px 0px #1A1A1A',
-    },
-    form: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '16px',
-    },
-    formGroup: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '6px',
-    },
-    formLabel: {
-      fontWeight: '800',
-      fontSize: '14px',
-      textTransform: 'uppercase',
-    },
-    formInput: {
-      padding: '10px 12px',
-      border: '2px solid #1A1A1A',
-      fontSize: '15px',
-      fontFamily: "'Inter', sans-serif",
-    },
-    prefSelectorGrid: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '10px',
-      marginTop: '6px',
-    },
-    prefToggle: {
-      padding: '8px 16px',
-      fontSize: '14px',
-      fontWeight: 'bold',
-      border: '2px solid #1A1A1A',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
-      boxShadow: '2px 2px 0px #1A1A1A',
-    },
-    formActions: {
-      display: 'flex',
-      gap: '12px',
-      marginTop: '10px',
-    },
-    formSubmitBtn: {
-      flex: 1,
-      backgroundColor: '#F5C142',
-      color: '#1A1A1A',
-      border: '2px solid #1A1A1A',
-      padding: '12px',
-      fontSize: '15px',
-      fontWeight: '800',
-      textTransform: 'uppercase',
-      cursor: 'pointer',
-      boxShadow: '2px 2px 0px #1A1A1A',
-    },
-  };
+    const esc = (e) => e.key === 'Escape' && onCancel();
+    document.addEventListener('keydown', esc);
+    return () => document.removeEventListener('keydown', esc);
+  }, [onCancel]);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.wrapper}>
-        {/* Header */}
-        <header style={styles.header}>
-          <div style={styles.titleSection}>
-            <h1 style={styles.title}>Cooks & Workloads</h1>
-            <p style={styles.subtitle}>Configure kitchen staff, active status, and product preparation preferences.</p>
-          </div>
-          <button style={styles.addButton} onClick={openCreateModal}>
-            <UserPlus size={18} /> Add Kitchen Staff
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
+         style={{ background: 'rgba(26,26,26,0.5)' }} onClick={onCancel}>
+      <div className="bg-white border-2 border-[#1A1A1A] rounded-2xl p-6 max-w-sm w-full"
+           style={{ boxShadow: 'var(--shadow-modal)' }} onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-black mb-2 text-[#1A1A1A]">Remove cook?</h2>
+        <p className="text-sm text-[#6B7280] mb-6">
+          "<strong>{name}</strong>" will be archived and removed from the kitchen rotation.
+        </p>
+        <div className="flex justify-end gap-3">
+          <button onClick={onCancel} className="text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] transition-colors">
+            Cancel
           </button>
-        </header>
-
-        {/* Toolbar */}
-        <div style={styles.toolbar}>
-          <div style={styles.searchWrapper}>
-            <Search style={styles.searchIcon} size={18} />
-            <input
-              type="text"
-              placeholder="Search cooks by name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={styles.searchInput}
-            />
-          </div>
-
-          <div style={styles.filterTabs}>
-            <button
-              style={{
-                ...styles.filterTab,
-                ...(statusFilter === 'all' ? styles.activeFilterTab : {}),
-              }}
-              onClick={() => setStatusFilter('all')}
-            >
-              All staff
-            </button>
-            <button
-              style={{
-                ...styles.filterTab,
-                ...(statusFilter === 'active' ? styles.activeFilterTab : {}),
-              }}
-              onClick={() => setStatusFilter('active')}
-            >
-              Active Only
-            </button>
-            <button
-              style={{
-                ...styles.filterTab,
-                ...{ borderRight: 'none' },
-                ...(statusFilter === 'inactive' ? styles.activeFilterTab : {}),
-              }}
-              onClick={() => setStatusFilter('inactive')}
-            >
-              Inactive
-            </button>
-          </div>
+          <button onClick={onConfirm}
+                  className="bg-[#EF4444] text-white font-bold text-sm rounded-lg px-4 py-2.5 border-2 border-[#1A1A1A] hover:bg-red-600 transition-colors">
+            Archive
+          </button>
         </div>
-
-        {error && <div style={styles.errorBanner}>{error}</div>}
-
-        {/* Grid/List */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', fontWeight: 'bold' }}>
-            Fetching kitchen staff profiles...
-          </div>
-        ) : (
-          <div style={styles.grid}>
-            {filteredCooks.map((cook) => (
-              <div key={cook.id} style={styles.card}>
-                <div>
-                  <div style={styles.cardHeader}>
-                    <h2 style={styles.cookName}>{cook.name}</h2>
-                    <span
-                      style={{
-                        ...styles.statusBadge,
-                        backgroundColor: cook.is_active ? '#81C784' : '#E0E0E0',
-                      }}
-                    >
-                      {cook.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h4 style={styles.prefsTitle}>
-                      <Coffee size={12} /> Preferred Categories
-                    </h4>
-                    <div style={styles.chipsContainer}>
-                      {cook.category_preferences?.length === 0 ? (
-                        <span style={{ fontSize: '13px', color: '#666', fontStyle: 'italic' }}>
-                          No preferences (receives all items)
-                        </span>
-                      ) : (
-                        cook.category_preferences?.map((pref) => (
-                          <span
-                            key={pref.id}
-                            style={{
-                              ...styles.chip,
-                              backgroundColor: pref.color,
-                            }}
-                          >
-                            {pref.name}
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={styles.cardActions}>
-                  <button style={styles.actionBtn} onClick={() => handleToggleActive(cook)}>
-                    {cook.is_active ? (
-                      <>
-                        <ToggleRight size={16} /> Archive
-                      </>
-                    ) : (
-                      <>
-                        <ToggleLeft size={16} /> Activate
-                      </>
-                    )}
-                  </button>
-                  <button style={styles.actionBtn} onClick={() => openEditModal(cook)}>
-                    <Edit2 size={14} /> Edit
-                  </button>
-                  <button
-                    style={{ ...styles.actionBtn, color: '#FF6B6B' }}
-                    onClick={() => handleDelete(cook.id, cook.name)}
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {!loading && filteredCooks.length === 0 && (
-              <div
-                style={{
-                  gridColumn: '1 / -1',
-                  textAlign: 'center',
-                  padding: '60px',
-                  backgroundColor: '#FFF',
-                  border: '3px solid #1A1A1A',
-                  boxShadow: '4px 4px 0px #1A1A1A',
-                  fontWeight: 'bold',
-                }}
-              >
-                No kitchen staff found.
-              </div>
-            )}
-          </div>
-        )}
       </div>
-
-      {/* Modal Form */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={modalMode === 'create' ? 'Add Kitchen Staff' : 'Edit Kitchen Staff'}
-      >
-        <form onSubmit={handleFormSubmit} style={styles.form}>
-          {formError && (
-            <div style={{ color: '#FF6B6B', fontWeight: 'bold', fontSize: '14px' }}>
-              {formError}
-            </div>
-          )}
-
-          <div style={styles.formGroup}>
-            <label style={styles.formLabel}>Cook Name *</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Chef Raj"
-              value={formFields.name}
-              onChange={(e) => setFormFields({ ...formFields, name: e.target.value })}
-              style={styles.formInput}
-            />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label style={styles.formLabel}>Category Preferences</label>
-            <span style={{ fontSize: '12px', color: '#666', marginTop: '-2px' }}>
-              Click to select category preferences. Work allocation algorithm favors matches.
-            </span>
-            <div style={styles.prefSelectorGrid}>
-              {categories.map((cat) => {
-                const isSelected = formFields.category_preferences.includes(cat.id);
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => toggleCategorySelection(cat.id)}
-                    style={{
-                      ...styles.prefToggle,
-                      backgroundColor: isSelected ? cat.color : '#FFF',
-                      opacity: isSelected ? 1 : 0.65,
-                      textDecoration: isSelected ? 'none' : 'none',
-                    }}
-                  >
-                    {isSelected && <Check size={14} />}
-                    {cat.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {modalMode === 'edit' && (
-            <div style={{ ...styles.formGroup, flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
-              <input
-                type="checkbox"
-                id="cook_is_active"
-                checked={formFields.is_active}
-                onChange={(e) => setFormFields({ ...formFields, is_active: e.target.checked })}
-                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-              />
-              <label htmlFor="cook_is_active" style={{ fontWeight: 'bold', cursor: 'pointer' }}>
-                Active (available for order auto-allocation)
-              </label>
-            </div>
-          )}
-
-          <div style={styles.formActions}>
-            <button type="submit" style={styles.formSubmitBtn}>
-              {modalMode === 'create' ? 'Save Profile' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }
 
+/* ── cook form modal ──────────────────────────────────── */
+const EMPTY_FORM = { name: '', category_preferences: [], is_active: true };
 
+function CookModal({ initial, categories, onSave, onClose }) {
+  const [form, setForm] = useState(
+    initial
+      ? { name: initial.name, is_active: initial.is_active,
+          category_preferences: (initial.category_preferences || []).map((c) => c.id ?? c) }
+      : EMPTY_FORM
+  );
+  const [saving, setSaving] = useState(false);
+  const [err, setErr]       = useState('');
 
+  useEffect(() => {
+    const esc = (e) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', esc);
+    return () => document.removeEventListener('keydown', esc);
+  }, [onClose]);
+
+  const toggleCat = (id) =>
+    setForm((f) => ({
+      ...f,
+      category_preferences: f.category_preferences.includes(id)
+        ? f.category_preferences.filter((x) => x !== id)
+        : [...f.category_preferences, id],
+    }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setErr('');
+    try {
+      const payload = {
+        name: form.name.trim(),
+        category_preferences: form.category_preferences,
+        ...(initial ? { is_active: form.is_active } : {}),
+      };
+      await onSave(payload);
+      onClose();
+    } catch (ex) {
+      setErr(ex.message || 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
+         style={{ background: 'rgba(26,26,26,0.5)' }} onClick={onClose}>
+      <div className="bg-white border-2 border-[#1A1A1A] rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+           style={{ boxShadow: 'var(--shadow-modal)' }} onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-black mb-5 text-[#1A1A1A]">
+          {initial ? 'Edit cook profile' : 'Add kitchen staff'}
+        </h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {/* Name */}
+          <div className="flex flex-col gap-1">
+            <label className={labelCls}>Name *</label>
+            <input className={inputCls} value={form.name} required placeholder="e.g. Chef Raj"
+                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                   style={{ borderColor: '#E5E7EB' }}
+                   onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
+                   onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')} />
+          </div>
+
+          {/* Category preferences */}
+          <div className="flex flex-col gap-2">
+            <label className={labelCls}>Category preferences</label>
+            <p className="text-xs text-[#6B7280] -mt-1">
+              Select which item types this cook handles. Leave empty to receive all items.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {categories.length === 0
+                ? <p className="text-xs text-[#9CA3AF] italic">No categories yet</p>
+                : categories.map((cat) => {
+                  const selected = form.category_preferences.includes(cat.id);
+                  return (
+                    <button key={cat.id} type="button" onClick={() => toggleCat(cat.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 text-xs font-bold transition-all duration-150"
+                            style={{
+                              borderColor: '#1A1A1A',
+                              background: selected ? cat.color : '#fff',
+                              color: '#1A1A1A',
+                              opacity: selected ? 1 : 0.6,
+                              boxShadow: selected ? 'var(--shadow-sm)' : 'none',
+                            }}>
+                      {selected && <span className="text-[10px]">✓</span>}
+                      {cat.name}
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* Status — only on edit */}
+          {initial && (
+            <div className="flex flex-col gap-1">
+              <label className={labelCls}>Status</label>
+              <select className={inputCls} value={form.is_active ? 'true' : 'false'}
+                      onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.value === 'true' }))}
+                      style={{ borderColor: '#E5E7EB' }}
+                      onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
+                      onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}>
+                <option value="true">Active — available for allocation</option>
+                <option value="false">Inactive — removed from rotation</option>
+              </select>
+            </div>
+          )}
+
+          {err && (
+            <div className="border-2 rounded-lg px-3 py-2.5 text-sm"
+                 style={{ background: '#FEF2F2', borderColor: '#EF4444', color: '#EF4444' }}>
+              {err}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-1">
+            <button type="button" onClick={onClose}
+                    className="text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] transition-colors">
+              Cancel
+            </button>
+            <button type="submit" disabled={saving}
+                    className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#E0AE30] transition-colors"
+                    style={{ background: '#F5C142', borderColor: '#1A1A1A', color: '#1A1A1A',
+                             boxShadow: 'var(--shadow-md)', opacity: saving ? 0.7 : 1 }}>
+              {saving ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : (initial ? 'Update' : 'Add cook')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ── skeleton card ─────────────────────────────────────── */
+function SkeletonCard() {
+  return (
+    <div className="bg-white border-2 border-[#1A1A1A] rounded-2xl p-5 space-y-3"
+         style={{ boxShadow: 'var(--shadow-lg)' }}>
+      <div className="h-5 w-2/3 rounded animate-pulse" style={{ background: '#E5E7EB' }} />
+      <div className="h-3 w-1/3 rounded animate-pulse" style={{ background: '#E5E7EB' }} />
+      <div className="flex gap-2 pt-1">
+        <div className="h-6 w-16 rounded-lg animate-pulse" style={{ background: '#E5E7EB' }} />
+        <div className="h-6 w-20 rounded-lg animate-pulse" style={{ background: '#E5E7EB' }} />
+      </div>
+    </div>
+  );
+}
+
+/* ── cook card ─────────────────────────────────────────── */
+function CookCard({ cook, onEdit, onToggle, onDelete }) {
+  const [toggling, setToggling] = useState(false);
+
+  const handleToggle = async () => {
+    setToggling(true);
+    await onToggle(cook);
+    setToggling(false);
+  };
+
+  return (
+    <div className="bg-white border-2 border-[#1A1A1A] rounded-2xl p-5 flex flex-col gap-4"
+         style={{ boxShadow: 'var(--shadow-lg)', opacity: cook.is_active ? 1 : 0.65 }}>
+      {/* header */}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="font-black text-base text-[#1A1A1A] leading-tight">{cook.name}</p>
+          <p className="text-xs text-[#6B7280] mt-0.5">
+            {cook.is_active ? 'Available for order allocation' : 'Not in rotation'}
+          </p>
+        </div>
+        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full flex-shrink-0"
+              style={cook.is_active
+                ? { background: '#D1FAE5', color: '#065F46' }
+                : { background: '#F3F4F6', color: '#6B7280' }}>
+          {cook.is_active ? 'Active' : 'Inactive'}
+        </span>
+      </div>
+
+      {/* category chips */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#9CA3AF] mb-2 flex items-center gap-1">
+          <Coffee size={10} /> Handles
+        </p>
+        {(cook.category_preferences || []).length === 0 ? (
+          <span className="text-xs text-[#9CA3AF] italic">All categories</span>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {cook.category_preferences.map((pref) => (
+              <span key={pref.id}
+                    className="text-xs font-bold px-2.5 py-0.5 rounded-full border border-[#1A1A1A]"
+                    style={{ background: pref.color || '#F5C142', color: '#1A1A1A' }}>
+                {pref.name}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* actions */}
+      <div className="flex items-center gap-2 pt-1 border-t-2 border-[#E5E7EB]">
+        <button onClick={handleToggle} disabled={toggling}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold border-2 border-[#1A1A1A] hover:bg-[#F5F0E8] transition-colors"
+                style={{ opacity: toggling ? 0.6 : 1 }}>
+          {toggling ? <Loader2 size={12} className="animate-spin" /> : null}
+          {cook.is_active ? 'Deactivate' : 'Activate'}
+        </button>
+        <button onClick={onEdit} aria-label="Edit cook"
+                className="w-8 h-8 rounded-lg border-2 border-[#1A1A1A] flex items-center justify-center hover:bg-[#F5F0E8] transition-colors">
+          <Pencil size={13} strokeWidth={2} />
+        </button>
+        <button onClick={onDelete} aria-label="Delete cook"
+                className="w-8 h-8 rounded-lg border-2 border-[#1A1A1A] flex items-center justify-center hover:bg-[#FEF2F2] transition-colors">
+          <Trash2 size={13} strokeWidth={2} style={{ color: '#EF4444' }} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── main page ─────────────────────────────────────────── */
+export default function Cooks() {
+  const [cooks,      setCooks]      = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [apiErr,     setApiErr]     = useState('');
+  const [search,     setSearch]     = useState('');
+  const [filter,     setFilter]     = useState('all'); // 'all' | 'active' | 'inactive'
+
+  const [cookModal,   setCookModal]   = useState(null); // null | {} (add) | cook (edit)
+  const [deleteModal, setDeleteModal] = useState(null); // null | { id, name }
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setApiErr('');
+    try {
+      const [cd, catd] = await Promise.all([getCooks(), getCategories()]);
+      setCooks(cd.cooks || []);
+      setCategories(catd.categories || []);
+    } catch (e) {
+      setApiErr(e.message || 'Failed to load');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const saveCook = async (data) => {
+    if (cookModal?.id) await updateCook(cookModal.id, data);
+    else               await createCook(data);
+    await load();
+  };
+
+  const toggleActive = async (cook) => {
+    await updateCook(cook.id, { name: cook.name, is_active: !cook.is_active });
+    await load();
+  };
+
+  const confirmDelete = async () => {
+    await deleteCook(deleteModal.id);
+    setDeleteModal(null);
+    await load();
+  };
+
+  const visible = cooks.filter((c) => {
+    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase());
+    const matchFilter =
+      filter === 'all' ||
+      (filter === 'active' && c.is_active) ||
+      (filter === 'inactive' && !c.is_active);
+    return matchSearch && matchFilter;
+  });
+
+  return (
+    <div>
+      {/* Heading */}
+      <div className="flex items-center gap-3 mb-1">
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center border-2 flex-shrink-0"
+             style={{ background: '#F5C142', borderColor: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
+          <ChefHat size={18} strokeWidth={2.5} style={{ color: '#1A1A1A' }} />
+        </div>
+        <h1 className="text-[1.5rem] font-black text-[#1A1A1A] leading-tight">Kitchen Staff</h1>
+      </div>
+      <p className="text-sm text-[#6B7280] mb-6 ml-12">
+        Manage cook profiles, active status, and category preferences for order allocation.
+      </p>
+
+      {/* API error */}
+      {apiErr && (
+        <div className="border-2 rounded-xl px-4 py-3 text-sm mb-5"
+             style={{ background: '#FEF2F2', borderColor: '#EF4444', color: '#EF4444' }} role="alert">
+          {apiErr}
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        {/* Search */}
+        <div className="relative flex-1 min-w-48">
+          <Search size={14} strokeWidth={2} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+                 placeholder="Search by name…"
+                 className="w-full border-2 rounded-lg pl-8 pr-3 py-2 text-sm bg-white text-[#1A1A1A] focus:outline-none transition-colors"
+                 style={{ borderColor: '#E5E7EB' }}
+                 onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
+                 onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')} />
+        </div>
+
+        {/* Filter tabs */}
+        <div className="flex items-center gap-1">
+          {[['all', 'All'], ['active', 'Active'], ['inactive', 'Inactive']].map(([key, label]) => (
+            <button key={key} onClick={() => setFilter(key)}
+                    className="px-3 py-2 rounded-lg border-2 text-sm font-bold transition-colors duration-150"
+                    style={filter === key
+                      ? { background: '#F5C142', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }
+                      : { background: '#fff', borderColor: '#1A1A1A', color: '#6B7280' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Add button */}
+        <button onClick={() => setCookModal({})}
+                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-black border-2 hover:bg-[#E0AE30] transition-colors ml-auto"
+                style={{ background: '#F5C142', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
+          <Plus size={14} strokeWidth={2} /> Add cook
+        </button>
+      </div>
+
+      {/* Card grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading
+          ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+          : visible.length === 0
+            ? (
+              <div className="col-span-full bg-white border-2 border-[#1A1A1A] rounded-2xl px-6 py-12 text-center"
+                   style={{ boxShadow: 'var(--shadow-lg)' }}>
+                <p className="text-sm font-bold text-[#1A1A1A] mb-1">
+                  {search || filter !== 'all' ? 'No cooks match your filter' : 'No kitchen staff yet'}
+                </p>
+                <p className="text-xs text-[#6B7280] mb-4">
+                  {search || filter !== 'all' ? 'Try adjusting your search or filter.' : 'Add your first cook to start managing order allocation.'}
+                </p>
+                {!search && filter === 'all' && (
+                  <button onClick={() => setCookModal({})}
+                          className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black border-2 hover:bg-[#E0AE30] transition-colors"
+                          style={{ background: '#F5C142', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-md)' }}>
+                    <Plus size={14} strokeWidth={2} /> Add cook
+                  </button>
+                )}
+              </div>
+            )
+            : visible.map((cook) => (
+              <CookCard key={cook.id} cook={cook}
+                        onEdit={() => setCookModal(cook)}
+                        onToggle={toggleActive}
+                        onDelete={() => setDeleteModal({ id: cook.id, name: cook.name })} />
+            ))}
+      </div>
+
+      {/* Modals */}
+      {cookModal !== null && (
+        <CookModal
+          initial={cookModal?.id ? cookModal : null}
+          categories={categories}
+          onSave={saveCook}
+          onClose={() => setCookModal(null)}
+        />
+      )}
+      {deleteModal && (
+        <ConfirmModal
+          name={deleteModal.name}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteModal(null)}
+        />
+      )}
+    </div>
+  );
+}
