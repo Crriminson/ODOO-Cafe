@@ -238,10 +238,10 @@ export default function FloorsAndTables() {
   };
 
   const saveTable = async (data) => {
-    if (tableModal?.table?.id) {
+    if (tableModal.table) {
       await request(`/tables/${tableModal.table.id}`, { method: 'PUT', body: data });
     } else {
-      await request('/tables', { method: 'POST', body: data });
+      await request(`/floors/${tableModal.floorId}/tables`, { method: 'POST', body: data });
     }
     await load();
   };
@@ -314,7 +314,7 @@ export default function FloorsAndTables() {
                 <h2 className="text-lg font-bold text-[#1A1A1A]">{floor.name}</h2>
                 <div className="flex items-center gap-2">
                   <button aria-label={`Add table to ${floor.name}`}
-                          onClick={() => setTableModal({ floorId: floor.id })}
+                          onClick={() => setTableModal({ floorId: floor.id, table: null })}
                           className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-black border-2 hover:bg-[#E0AE30] transition-colors"
                           style={{ background: '#F5C142', borderColor: '#1A1A1A', color: '#1A1A1A', boxShadow: 'var(--shadow-sm)' }}>
                     <Plus size={12} strokeWidth={2} /> Table
@@ -361,7 +361,12 @@ export default function FloorsAndTables() {
         <FloorModal initial={floorModal?.id ? floorModal : null} onSave={saveFloor} onClose={() => setFloorModal(null)} />
       )}
       {tableModal !== null && (
-        <TableModal initial={tableModal.table || null} floorId={tableModal.floorId} onSave={saveTable} onClose={() => setTableModal(null)} />
+        <TableModal
+          initial={tableModal.table}
+          floorId={tableModal.floorId}
+          onSave={saveTable}
+          onClose={() => setTableModal(null)}
+        />
       )}
       {deleteModal && (
         <ConfirmModal item={deleteModal.item} itemType={deleteModal.type} onConfirm={confirmDelete} onCancel={() => setDeleteModal(null)} />
