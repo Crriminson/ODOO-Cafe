@@ -6,7 +6,7 @@ import { getCategories } from '../../../shared/api/categories.api.js';
 /* ── helpers ─────────────────────────────────────────── */
 const fmt = (v) => `₹${parseFloat(v || 0).toFixed(2)}`;
 
-const EMPTY_FORM = { name: '', category_id: '', price: '', tax_rate: '', is_active: true };
+const EMPTY_FORM = { name: '', category_id: '', price: '', is_active: true };
 
 const inputCls =
   'border-2 rounded-lg px-3 py-2.5 text-sm w-full bg-white transition-colors duration-150 focus:outline-none';
@@ -16,7 +16,7 @@ const labelCls = 'text-xs font-bold uppercase tracking-widest text-[#1A1A1A]';
 function SkeletonRow() {
   return (
     <tr className="border-b border-[#E5E7EB]">
-      {[1, 2, 3, 4, 5].map((i) => (
+      {[1, 2, 3, 4].map((i) => (
         <td key={i} className="px-4 py-3">
           <div className="h-4 rounded-lg animate-pulse" style={{ background: '#E5E7EB', width: i === 1 ? '60%' : '40%' }} />
         </td>
@@ -85,7 +85,7 @@ function ProductModal({ initial, categories, onSave, onClose }) {
         ...form,
         category_id: form.category_id ? parseInt(form.category_id) : null,
         price: parseFloat(form.price),
-        tax_rate: parseFloat(form.tax_rate || 0),
+        tax_rate: 0,
       });
       onClose();
     } catch (ex) {
@@ -142,24 +142,14 @@ function ProductModal({ initial, categories, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Price + Tax row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <label className={labelCls}>Price (₹) *</label>
-              <input className={inputCls} type="number" min="0" step="0.01" value={form.price}
-                     onChange={set('price')} required placeholder="120.00"
-                     style={{ borderColor: '#E5E7EB' }}
-                     onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
-                     onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className={labelCls}>Tax rate (%)</label>
-              <input className={inputCls} type="number" min="0" max="100" step="0.01" value={form.tax_rate}
-                     onChange={set('tax_rate')} placeholder="5"
-                     style={{ borderColor: '#E5E7EB' }}
-                     onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
-                     onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')} />
-            </div>
+          {/* Price */}
+          <div className="flex flex-col gap-1">
+            <label className={labelCls}>Price (₹) *</label>
+            <input className={inputCls} type="number" min="0" step="0.01" value={form.price}
+                   onChange={set('price')} required placeholder="120.00"
+                   style={{ borderColor: '#E5E7EB' }}
+                   onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
+                   onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')} />
           </div>
 
           {err && (
@@ -292,8 +282,7 @@ export default function Products() {
               <tr className="bg-[#F5F0E8] border-b-2 border-[#1A1A1A]">
                 <th className="text-left text-xs font-bold uppercase tracking-wide px-4 py-3 text-[#1A1A1A]">Name</th>
                 <th className="text-left text-xs font-bold uppercase tracking-wide px-4 py-3 text-[#1A1A1A]">Category</th>
-                <th className="text-right text-xs font-bold uppercase tracking-wide px-4 py-3 text-[#1A1A1A]">Price</th>
-                <th className="text-right text-xs font-bold uppercase tracking-wide px-4 py-3 text-[#1A1A1A]">Tax</th>
+                <th className="text-right text-xs font-bold uppercase tracking-wide px-4 py-3 text-[#1A1A1A]">Price (₹)</th>
                 <th className="text-center text-xs font-bold uppercase tracking-wide px-4 py-3 text-[#1A1A1A]">Status</th>
                 <th className="text-right text-xs font-bold uppercase tracking-wide px-4 py-3 text-[#1A1A1A]">Actions</th>
               </tr>
@@ -303,7 +292,7 @@ export default function Products() {
                 Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center">
+                  <td colSpan={5} className="px-4 py-12 text-center">
                     <p className="text-sm font-bold text-[#1A1A1A] mb-1">No products yet</p>
                     <p className="text-xs text-[#6B7280] mb-4">Add your first menu item to get started.</p>
                     <button
@@ -332,7 +321,6 @@ export default function Products() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right font-mono text-[#1A1A1A]">{fmt(p.price)}</td>
-                      <td className="px-4 py-3 text-right font-mono text-[#6B7280]">{parseFloat(p.tax_rate || 0).toFixed(1)}%</td>
                       <td className="px-4 py-3 text-center">
                         <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
                               style={p.is_active
