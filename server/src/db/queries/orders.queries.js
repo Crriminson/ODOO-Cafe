@@ -344,63 +344,82 @@ export const deleteOrder = async (id) => {
 };
 
 /**
- * Pays a draft order in a single transaction:
- *   1. Verify status === 'draft' and order has items
- *   2. Insert a payments row
- *   3. Update order status → 'paid', apply tip if provided
- *   4. Emit to KDS (kitchen finds out AFTER payment, not before)
- *   5. Return the full updated order with change_due for cash
- *
- * @param {number} id  - Order ID
- * @param {{ payment_method: string, amount_paid: string|number,
- *            transaction_reference?: string, tip?: string|number }} paymentData
+ * Processes payment for an order (transitions to 'paid').
+ * 
+ * @param {number} id - Order ID
+ * @param {{ method: string, amount: string, tip: string, transaction_reference?: string, coupon_code?: string }} paymentData
+ * @returns {Promise<{ order: Object, change_due: string }>}
  */
-export const payOrder = async (id, { payment_method, amount_paid, transaction_reference, tip }) => {
+export const payOrder = async (id, { method, amount, tip, transactionReference, couponCode }) => {
   const currentOrder = await getOrderById(id);
-  if (!currentOrder) return null;
+  if (!currentOrder) {
+    return null;
+  }
 
-  if (currentOrder.status !== ORDER_STATUS.DRAFT) {
-    const err = new Error('Only draft orders can be paid');
-    err.code = 'ORDER_NOT_DRAFT';
+  if (currentOrder.status !== ORDER_STATUS.SENT) {
+    const err = new Error('Only orders sent to kitchen can be paid');
+    err.code = 'ORDER_NOT_SENT';
     throw err;
   }
 
-  if (!currentOrder.items || currentOrder.items.length === 0) {
-    const err = new Error('Cannot pay an empty order');
-    err.code = 'EMPTY_ORDER';
-    throw err;
-  }
+  return db.transaction(async (trx) => {
+    let discountAmount = 0;
 
-  const tipAmount  = parseFloat(tip || 0).toFixed(2);
-  const orderTotal = parseFloat(currentOrder.total);
-  const paid       = parseFloat(amount_paid);
-  const changeDue  = payment_method === 'cash'
-    ? Math.max(0, paid - orderTotal).toFixed(2)
-    : '0.00';
+    // Apply coupon if provided
+    if (couponCode) {
+      const couponRow = await trx('coupons')
+        .where(trx.raw('LOWER(code) = LOWER(?)', [couponCode]))
+        .where('is_active', true)
+        .first();
 
-  await db.transaction(async (trx) => {
-    // 1. Insert payment record
+      if (couponRow) {
+        const orderTotal = parseFloat(currentOrder.total);
+        if (couponRow.discount_type === 'percentage') {
+          discountAmount = orderTotal * (parseFloat(couponRow.discount_value) / 100);
+        } else {
+          discountAmount = parseFloat(couponRow.discount_value);
+        }
+        discountAmount = Math.min(discountAmount, orderTotal);
+
+        // Record the discount
+        await trx('order_discounts').insert({
+          order_id: id,
+          coupon_id: couponRow.id,
+          discount_type: couponRow.discount_type,
+          discount_value: couponRow.discount_value,
+          discount_amount: discountAmount.toFixed(2),
+        });
+      }
+    }
+
+    const orderTotal = parseFloat(currentOrder.total);
+    const finalTotal = Math.max(0, orderTotal - discountAmount);
+    const tipAmount = parseFloat(tip || '0.00');
+    const amountReceived = parseFloat(amount || '0.00');
+    const changeDue = method === 'cash' ? Math.max(0, amountReceived - finalTotal - tipAmount) : 0;
+
+    // Record the payment
     await trx('payments').insert({
-      order_id:              id,
-      method:                payment_method,
-      amount:                orderTotal.toFixed(2),
-      tip:                   tipAmount,
-      transaction_reference: transaction_reference || null,
+      order_id: id,
+      method,
+      amount: amountReceived.toFixed(2),
+      tip: tipAmount.toFixed(2),
+      transaction_reference: transactionReference || null,
     });
 
-    // 2. Mark order paid + apply tip
-    await trx('orders').where({ id }).update({
-      status:     ORDER_STATUS.PAID,
-      tip:        tipAmount,
-      updated_at: trx.fn.now(),
-    });
+    // Update order status to paid
+    await trx('orders')
+      .where({ id })
+      .update({
+        status: ORDER_STATUS.PAID,
+        discount_total: discountAmount.toFixed(2),
+        total: finalTotal.toFixed(2),
+        tip: tipAmount.toFixed(2),
+        updated_at: trx.fn.now(),
+      });
+
+    const fullOrder = await getOrderById(id, trx);
+    return { order: fullOrder, change_due: changeDue.toFixed(2) };
   });
-
-  // 3. Fetch the completed order
-  const fullOrder = await getOrderById(id);
-
-  // 4. Broadcast to KDS — kitchen only sees the order AFTER payment
-  emitNewOrder(fullOrder);
-
-  return { order: fullOrder, change_due: changeDue };
 };
+

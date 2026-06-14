@@ -7,7 +7,7 @@ import {
   updateOrder,
   sendOrderToKitchen,
   deleteOrder,
-  payOrder,
+  payOrderController,
 } from '../controllers/orders.controller.js';
 
 const router = Router();
@@ -27,10 +27,11 @@ router.put('/:id', requireAuth, updateOrder);
 // POST /orders/:id/send -> requireAuth -> sendOrderToKitchen
 router.post('/:id/send', requireAuth, sendOrderToKitchen);
 
-// POST /orders/:id/pay -> requireAuth -> payOrder
-router.post('/:id/pay', requireAuth, payOrder);
+// POST /orders/:id/pay -> requireAuth -> payOrderController
+router.post('/:id/pay', requireAuth, payOrderController);
 
 // DELETE /orders/:id -> requireAuth -> deleteOrder
 router.delete('/:id', requireAuth, deleteOrder);
 
 export default router;
+

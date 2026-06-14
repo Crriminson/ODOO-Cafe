@@ -9,13 +9,10 @@ let state = {
   items: [],           // legacy — kept for backward compat
   currentOrder: null,  // full server-returned order object
   isCartLoading: false,
-
-  // ─── Coupon (applied in Discount popup, sent to server at pay time) ──
-  couponCode:      null,  // string | null
-  discountPreview: null,  // { discount_amount, discount_type, discount_value, code } | null
-
-  // ─── Global product search (written by nav bar, read by ProductSection) ──
   searchQuery: '',
+  couponCode: null,
+  discountPreview: null,
+
   // ─── Existing actions ────────────────────────────────────────────────
   setOrderType: (orderType) => {
     updateState({ orderType });
@@ -29,8 +26,18 @@ let state = {
   setItems: (items) => {
     updateState({ items });
   },
+
+  // ─── Search ──────────────────────────────────────────────────────────
   setSearchQuery: (searchQuery) => {
     updateState({ searchQuery });
+  },
+
+  // ─── Coupon / discount ───────────────────────────────────────────────
+  setCoupon: (couponData) => {
+    updateState({ couponCode: couponData.code, discountPreview: couponData });
+  },
+  clearCoupon: () => {
+    updateState({ couponCode: null, discountPreview: null });
   },
 
   // ─── New: order object ───────────────────────────────────────────────
@@ -107,21 +114,7 @@ let state = {
       isCartLoading: false,
       couponCode: null,
       discountPreview: null,
-      searchQuery: '',
     });
-  },
-
-  /** Store a validated coupon so PaymentSection can send it at pay time */
-  setCoupon: ({ code, discount_amount, discount_type, discount_value }) => {
-    updateState({
-      couponCode: code,
-      discountPreview: { code, discount_amount, discount_type, discount_value },
-    });
-  },
-
-  /** Remove the applied coupon */
-  clearCoupon: () => {
-    updateState({ couponCode: null, discountPreview: null });
   },
 };
 

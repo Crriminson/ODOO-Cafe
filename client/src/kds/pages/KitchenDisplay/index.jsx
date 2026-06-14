@@ -4,7 +4,7 @@ import {
   stageOrder,
   completeItem,
 } from '../../../shared/api/kds.api.js';
-import { KDS_STAGES } from '../../../shared/kdsStages.js';
+import { KDS_STAGES } from '@shared/constants/kdsStages.js';
 import { getCategories } from '../../../shared/api/categories.api.js';
 import { getProducts } from '../../../shared/api/products.api.js';
 import useDebounce from '../../../shared/hooks/useDebounce.js';

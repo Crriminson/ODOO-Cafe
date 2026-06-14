@@ -22,6 +22,11 @@ const handleOrderError = (err, res) => {
       error: { message: err.message, code: err.code },
     });
   }
+  if (err.code === 'ORDER_NOT_SENT') {
+    return res.status(409).json({
+      error: { message: err.message, code: err.code },
+    });
+  }
   if (err.code === 'ORDER_NOT_DRAFT') {
     return res.status(409).json({
       error: { message: err.message, code: err.code },
@@ -191,31 +196,32 @@ export const deleteOrder = async (req, res, next) => {
 
 /**
  * POST /orders/:id/pay
- * Accepts payment for a draft order, transitions it to paid,
- * and broadcasts to KDS. Kitchen sees the order only after payment.
+ * Processes payment for an order.
  */
-export const payOrder = async (req, res, next) => {
+export const payOrderController = async (req, res, next) => {
   try {
     const { id } = req.params;
     const orderId = parseInt(id, 10);
     const {
-      payment_method,
-      amount_paid,
-      transaction_reference,
+      method,
+      amount,
       tip,
+      transaction_reference, transactionReference,
+      coupon_code, couponCode,
     } = req.body;
 
-    if (!payment_method || !amount_paid) {
+    if (!method || !amount) {
       return res.status(400).json({
-        error: { message: 'payment_method and amount_paid are required', code: 'MISSING_FIELDS' },
+        error: { message: 'Payment method and amount are required', code: 'MISSING_FIELDS' },
       });
     }
 
     const result = await dbPayOrder(orderId, {
-      payment_method,
-      amount_paid,
-      transaction_reference,
-      tip,
+      method,
+      amount,
+      tip:                 tip ?? '0.00',
+      transactionReference: transaction_reference ?? transactionReference,
+      couponCode:          coupon_code           ?? couponCode,
     });
 
     if (!result) {

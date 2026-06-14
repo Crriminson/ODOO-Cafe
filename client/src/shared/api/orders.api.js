@@ -51,10 +51,10 @@ export const deleteOrder = (id) => apiClient.delete(`/orders/${id}`);
 
 /**
  * POST /orders/:id/pay
- * Pays an order (status: sent → paid). Creates payment record.
+ * Processes payment for an order.
  * @param {string|number} id - Order ID
- * @param {Object} body - { method, amount, tip?, transaction_reference?, coupon_code?, loyalty_points_to_redeem? }
- * @returns {Promise<{ order, payment, change_due }>}
+ * @param {Object} body - Payment payload
+ * @returns {Promise<{ order: Object, payment: Object, change_due: string }>}
  */
 export const payOrder = (id, body) => apiClient.post(`/orders/${id}/pay`, body);
 
