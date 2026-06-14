@@ -62,28 +62,28 @@ function ProductGridSkeleton() {
 }
 
 export default function ProductSection() {
-  const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [categories, setCategories]               = useState([]);
+  const [products, setProducts]                   = useState([]);
+  const [loading, setLoading]                     = useState(true);
+  const [error, setError]                         = useState(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState('all');
 
-  // Raw search query drives the input immediately; debouncedQuery is what actually filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  // searchQuery is written by the nav-bar search box (global) and
+  // also overrideable locally. Debounce it to avoid over-fetching.
+  const globalSearchQuery  = useCartStore((s) => s.searchQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(globalSearchQuery);
   const debounceRef = useRef(null);
 
   const addItem = useCartStore((s) => s.addItem);
 
-  // ─── Debounce search ────────────────────────────────────────────────
-  const handleSearchChange = useCallback((e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
+  // Sync global search query into debounced state
+  useEffect(() => {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      setDebouncedQuery(value);
+      setDebouncedQuery(globalSearchQuery);
     }, 300);
-  }, []);
+    return () => clearTimeout(debounceRef.current);
+  }, [globalSearchQuery]);
 
   useEffect(() => () => clearTimeout(debounceRef.current), []);
 
@@ -204,49 +204,53 @@ export default function ProductSection() {
         backgroundColor: 'var(--color-canvas)',
       }}
     >
-      {/* ─── Search bar ───────────────────────────────────────────── */}
-      <div
-        style={{
-          padding: '12px 16px 0',
-        }}
-      >
-        <div style={{ position: 'relative' }}>
-          <span
-            style={{
-              position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: '#9CA3AF',
-              pointerEvents: 'none',
-              fontSize: '16px',
-            }}
-          >
-            🔍
-          </span>
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={handleSearchChange}
-            placeholder="Search products..."
-            aria-label="Search products by name"
-            style={{
-              width: '100%',
-              padding: '10px 12px 10px 38px',
-              border: '2px solid #E5E7EB',
-              borderRadius: '8px',
-              fontSize: '14px',
-              backgroundColor: '#fff',
-              color: '#1A1A1A',
-              outline: 'none',
-              transition: 'border-color 0.15s ease',
-              boxSizing: 'border-box',
-            }}
-            onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
-            onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}
-          />
+      {/* ─── Search bar (local override) ──────────────────────────── */}
+      {/* Note: primary search is in the nav bar (globalSearchQuery).
+           This bar is hidden when globalSearchQuery is active to avoid
+           duplication on desktop. Kept for mobile where nav has no search. */}
+      {!globalSearchQuery && (
+        <div style={{ padding: '12px 16px 0' }}>
+          <div style={{ position: 'relative' }}>
+            <span
+              style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#9CA3AF',
+                pointerEvents: 'none',
+                fontSize: '16px',
+              }}
+            >
+              🔍
+            </span>
+            <input
+              type="search"
+              value={debouncedQuery}
+              onChange={(e) => {
+                clearTimeout(debounceRef.current);
+                debounceRef.current = setTimeout(() => setDebouncedQuery(e.target.value), 300);
+              }}
+              placeholder="Search products..."
+              aria-label="Search products by name"
+              style={{
+                width: '100%',
+                padding: '10px 12px 10px 38px',
+                border: '2px solid #E5E7EB',
+                borderRadius: '8px',
+                fontSize: '14px',
+                backgroundColor: '#fff',
+                color: '#1A1A1A',
+                outline: 'none',
+                transition: 'border-color 0.15s ease',
+                boxSizing: 'border-box',
+              }}
+              onFocus={(e) => (e.target.style.borderColor = '#1A1A1A')}
+              onBlur={(e) => (e.target.style.borderColor = '#E5E7EB')}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ─── Category tabs ────────────────────────────────────────── */}
       <div

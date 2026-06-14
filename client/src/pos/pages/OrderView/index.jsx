@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import PosLayout from '../../layout/PosLayout.jsx';
 import ProductSection from './ProductSection/index.jsx';
 import CartSection from './CartSection/index.jsx';
+import PaymentSection from './PaymentSection/index.jsx';
 import useCartStore from '../../../shared/stores/useCartStore.js';
 import { createOrder, getOrderById } from '../../../shared/api/orders.api.js';
 import { getCurrentSession } from '../../../shared/api/sessions.api.js';
@@ -113,60 +113,63 @@ export default function OrderView() {
   // ─── Error state ────────────────────────────────────────────────────
   if (initError) {
     return (
-      <PosLayout>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 'calc(100vh - 80px)',
+          backgroundColor: 'var(--color-canvas)',
+          padding: '24px',
+          gap: '16px',
+        }}
+      >
         <div
           style={{
+            background: 'var(--color-error-bg)',
+            border: '2px solid var(--color-error)',
+            borderRadius: '12px',
+            padding: '20px 24px',
+            maxWidth: '480px',
+            width: '100%',
             display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: 'calc(100vh - 80px)',
-            backgroundColor: 'var(--color-canvas)',
-            padding: '24px',
-            gap: '16px',
+            alignItems: 'flex-start',
+            gap: '12px',
           }}
         >
-          <div
-            style={{
-              background: 'var(--color-error-bg)',
-              border: '2px solid var(--color-error)',
-              borderRadius: '12px',
-              padding: '20px 24px',
-              maxWidth: '480px',
-              width: '100%',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-            }}
-          >
-            <span style={{ fontSize: '20px' }}>⚠️</span>
-            <span style={{ color: 'var(--color-error)', fontWeight: 600, fontSize: '14px' }}>
-              {initError}
-            </span>
-          </div>
-          <button
-            className="back-btn"
-            onClick={() => navigate('/pos/order-type')}
-          >
-            ← Back to Order Type
-          </button>
+          <span style={{ fontSize: '20px' }}>⚠️</span>
+          <span style={{ color: 'var(--color-error)', fontWeight: 600, fontSize: '14px' }}>
+            {initError}
+          </span>
         </div>
-      </PosLayout>
+        <button
+          onClick={() => navigate('/pos/order-type')}
+          style={{
+            padding: '8px 18px',
+            fontWeight: 700,
+            fontSize: 13,
+            border: '2px solid #1A1A1A',
+            background: '#fff',
+            cursor: 'pointer',
+            boxShadow: '3px 3px 0 #1A1A1A',
+            fontFamily: 'inherit',
+          }}
+        >
+          ← Back to Order Type
+        </button>
+      </div>
     );
   }
 
   // ─── Skeleton while order is being created / fetched ───────────────
   if (isInitializing) {
-    return (
-      <PosLayout>
-        <OrderViewSkeleton />
-      </PosLayout>
-    );
+    return <OrderViewSkeleton />;
   }
 
   // ─── Render: top bar + 3-col (desktop) or tab (mobile) ─────────────
   return (
-    <PosLayout>
+    <>
       {/* Top context bar */}
       <div
         style={{
@@ -301,23 +304,7 @@ export default function OrderView() {
         <div style={{ height: 'calc(100vh - 160px)', overflow: 'hidden' }}>
           {activeTab === 'Products' && <ProductSection />}
           {activeTab === 'Cart' && <CartSection />}
-          {activeTab === 'Payment' && (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                backgroundColor: 'var(--color-canvas)',
-                gap: '8px',
-              }}
-            >
-              <span style={{ fontSize: '32px' }}>💳</span>
-              <p style={{ fontWeight: 900, color: '#1A1A1A', fontSize: '16px' }}>Payment</p>
-              <p style={{ color: '#6B7280', fontSize: '13px' }}>Coming in Task E</p>
-            </div>
-          )}
+          {activeTab === 'Payment' && <PaymentSection />}
         </div>
       ) : (
         /* Desktop 3-column layout: Products 5fr | Cart 4fr | Payment 3fr */
@@ -352,45 +339,19 @@ export default function OrderView() {
             <CartSection />
           </div>
 
-          {/* Payment placeholder column */}
+          {/* Payment column */}
           <div
             style={{
+              overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'var(--color-canvas)',
-              gap: '8px',
-              padding: '24px',
             }}
           >
-            <div
-              style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '12px',
-                background: '#F5C142',
-                border: '2px solid #1A1A1A',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '24px',
-                boxShadow: '2px 2px 0px #1A1A1A',
-              }}
-            >
-              💳
-            </div>
-            <p style={{ fontWeight: 900, color: '#1A1A1A', fontSize: '16px', marginTop: '8px' }}>
-              Payment
-            </p>
-            <p style={{ color: '#6B7280', fontSize: '12px', textAlign: 'center' }}>
-              Available after sending
-              <br />order to kitchen
-            </p>
+            <PaymentSection />
           </div>
         </div>
       )}
-    </PosLayout>
+    </>
   );
 }
 

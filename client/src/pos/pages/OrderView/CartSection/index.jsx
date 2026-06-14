@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useCartStore from '../../../../shared/stores/useCartStore.js';
 import Modal from '../../../../shared/components/Modal.jsx';
 import { sendToKitchen, deleteOrder } from '../../../../shared/api/orders.api.js';
+import { validateCoupon } from '../../../../shared/api/coupons.api.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 const formatCurrency = (amount) => {
@@ -16,7 +17,7 @@ const formatCurrency = (amount) => {
   );
 };
 
-// ─── Tiny spinner for qty steppers during cart sync ───────────────────────
+// ─── Spinner dot used during async operations ─────────────────────────────
 function SpinnerDot() {
   return (
     <span
@@ -33,48 +34,277 @@ function SpinnerDot() {
   );
 }
 
+// ─── Discount / Coupon popup ──────────────────────────────────────────────
+/**
+ * DiscountPopup — spec §7.5 / §3.4
+ *
+ * Cashier manually enters a coupon code.  The code is validated via
+ * POST /coupons/validate (no side-effects, returns a discount preview).
+ * On success the discount is stored in the cart store so:
+ *   • CartSection shows it as a line-item in the order summary
+ *   • PaymentSection sends it to POST /orders/:id/pay
+ *
+ * Automated promotions are applied server-side at pay time and do NOT
+ * require any interaction here.
+ */
+function DiscountPopup({ isOpen, onClose, orderTotal }) {
+  const setCoupon      = useCartStore((s) => s.setCoupon);
+  const clearCoupon    = useCartStore((s) => s.clearCoupon);
+  const couponCode     = useCartStore((s) => s.couponCode);
+  const discountPreview = useCartStore((s) => s.discountPreview);
+
+  const [input, setInput]       = useState(couponCode || '');
+  const [validating, setValidating] = useState(false);
+  const [error, setError]       = useState('');
+  const [success, setSuccess]   = useState(null); // { code, discount_amount, ... }
+
+  const inputRef = useRef(null);
+
+  // Auto-focus and pre-fill when opened
+  useEffect(() => {
+    if (isOpen) {
+      setInput(couponCode || '');
+      setError('');
+      setSuccess(discountPreview || null);
+      // Focus after transition
+      setTimeout(() => inputRef.current?.focus(), 80);
+    }
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleValidate = async () => {
+    const code = input.trim();
+    if (!code) { setError('Please enter a coupon code.'); return; }
+    setValidating(true);
+    setError('');
+    setSuccess(null);
+    try {
+      const res = await validateCoupon(code, orderTotal);
+      setSuccess(res.coupon);
+    } catch (err) {
+      setError(err.message || 'Invalid or expired coupon code.');
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleApply = () => {
+    if (!success) return;
+    setCoupon(success);
+    onClose();
+  };
+
+  const handleRemove = () => {
+    clearCoupon();
+    setInput('');
+    setSuccess(null);
+    setError('');
+    onClose();
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !validating) {
+      success ? handleApply() : handleValidate();
+    }
+  };
+
+  const discountLabel =
+    success
+      ? success.discount_type === 'percentage'
+        ? `${parseFloat(success.discount_value)}% off`
+        : `${formatCurrency(success.discount_value)} off`
+      : '';
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Apply Discount Code">
+      {/* Input row */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={(e) => { setInput(e.target.value.toUpperCase()); setError(''); setSuccess(null); }}
+          onKeyDown={handleKeyDown}
+          placeholder="e.g. WELCOME10"
+          disabled={validating}
+          style={{
+            flex: 1,
+            border: success
+              ? '2px solid #22C55E'
+              : error
+              ? '2px solid #EF4444'
+              : '2px solid #1A1A1A',
+            padding: '10px 12px',
+            fontSize: 15,
+            fontWeight: 700,
+            fontFamily: 'monospace',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            outline: 'none',
+            background: '#fff',
+            transition: 'border-color 0.12s',
+          }}
+        />
+        <button
+          onClick={handleValidate}
+          disabled={validating || !input.trim() || !!success}
+          style={{
+            padding: '10px 18px',
+            background: success ? '#E5E7EB' : '#1A1A1A',
+            color: success ? '#9CA3AF' : '#F5C142',
+            border: '2px solid #1A1A1A',
+            fontWeight: 900,
+            fontSize: 13,
+            cursor: validating || !input.trim() || !!success ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            whiteSpace: 'nowrap',
+            boxShadow: '3px 3px 0 #1A1A1A',
+          }}
+        >
+          {validating ? <><SpinnerDot /> Checking…</> : 'Validate'}
+        </button>
+      </div>
+
+      {/* Error message */}
+      {error && (
+        <div
+          style={{
+            background: '#FEF2F2',
+            border: '2px solid #EF4444',
+            padding: '10px 14px',
+            marginBottom: 14,
+            fontSize: 13,
+            fontWeight: 600,
+            color: '#B91C1C',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          ⚠ {error}
+        </div>
+      )}
+
+      {/* Success preview */}
+      {success && (
+        <div
+          style={{
+            background: '#F0FDF4',
+            border: '2px solid #22C55E',
+            padding: '14px 16px',
+            marginBottom: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 18 }}>🎉</span>
+            <span style={{ fontWeight: 900, fontSize: 14, color: '#065F46' }}>
+              Code <span style={{ fontFamily: 'monospace' }}>{success.code}</span> is valid!
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+            <span style={{ fontSize: 13, color: '#6B7280' }}>{discountLabel}</span>
+            <span style={{ fontWeight: 900, fontSize: 16, color: '#065F46', fontFamily: 'monospace' }}>
+              −{formatCurrency(success.discount_amount)}
+            </span>
+          </div>
+          <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
+            Discount will be applied when payment is processed.
+          </p>
+        </div>
+      )}
+
+      {/* Note about automated promotions */}
+      <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 20, lineHeight: 1.6 }}>
+        Automated promotions (e.g. Buy-2-Get-10%-Off) are applied automatically
+        at payment — no code needed.
+      </p>
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 10 }}>
+        {couponCode && (
+          <button
+            onClick={handleRemove}
+            style={{
+              flex: 1,
+              padding: '11px 14px',
+              background: '#fff',
+              border: '2px solid #EF4444',
+              color: '#EF4444',
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: 'pointer',
+              boxShadow: '3px 3px 0 #EF4444',
+            }}
+          >
+            Remove Coupon
+          </button>
+        )}
+        <button
+          onClick={handleApply}
+          disabled={!success}
+          style={{
+            flex: 2,
+            padding: '11px 14px',
+            background: success ? '#F5C142' : '#E5E7EB',
+            border: '2px solid #1A1A1A',
+            color: '#1A1A1A',
+            fontWeight: 900,
+            fontSize: 14,
+            cursor: success ? 'pointer' : 'not-allowed',
+            opacity: success ? 1 : 0.5,
+            boxShadow: success ? '3px 3px 0 #1A1A1A' : 'none',
+          }}
+        >
+          Apply Discount
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── Main CartSection ─────────────────────────────────────────────────────
 export default function CartSection() {
   const navigate = useNavigate();
 
-  const currentOrder = useCartStore((s) => s.currentOrder);
-  const isCartLoading = useCartStore((s) => s.isCartLoading);
-  const updateQty = useCartStore((s) => s.updateQty);
-  const removeItem = useCartStore((s) => s.removeItem);
+  const currentOrder   = useCartStore((s) => s.currentOrder);
+  const isCartLoading  = useCartStore((s) => s.isCartLoading);
+  const updateQty      = useCartStore((s) => s.updateQty);
+  const removeItem     = useCartStore((s) => s.removeItem);
   const setCurrentOrder = useCartStore((s) => s.setCurrentOrder);
-  const clearCart = useCartStore((s) => s.clearCart);
+  const clearCart      = useCartStore((s) => s.clearCart);
+  const couponCode     = useCartStore((s) => s.couponCode);
+  const discountPreview = useCartStore((s) => s.discountPreview);
 
-  const [isSending, setIsSending] = useState(false);
-  const [sendError, setSendError] = useState(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState(null);
+  const [isSending,         setIsSending]         = useState(false);
+  const [sendError,         setSendError]          = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen]  = useState(false);
+  const [isDeleting,        setIsDeleting]         = useState(false);
+  const [deleteError,       setDeleteError]        = useState(null);
+  const [isDiscountOpen,    setIsDiscountOpen]     = useState(false);
 
   const items = currentOrder?.items || [];
 
-  const calculatedSubtotal = items.reduce((sum, item) => {
-    const price = parseFloat(item.unit_price || item.price || 0);
-    const qty = item.quantity || 0;
-    return sum + price * qty;
-  }, 0);
+  // ─── Totals — prefer server-computed values ────────────────────────
+  const subtotal  = currentOrder ? parseFloat(currentOrder.subtotal)       : 0;
+  const tax       = currentOrder ? parseFloat(currentOrder.tax_total)      : 0;
+  const serverDiscount = currentOrder ? parseFloat(currentOrder.discount_total) : 0;
+  const tip       = currentOrder ? parseFloat(currentOrder.tip || 0)       : 0;
+  const serverTotal   = currentOrder ? parseFloat(currentOrder.total)      : 0;
 
-  const calculatedTax = items.reduce((sum, item) => {
-    const price = parseFloat(item.unit_price || item.price || 0);
-    const qty = item.quantity || 0;
-    const rateVal = parseFloat(item.tax_rate || 0);
-    const rate = rateVal < 1 && rateVal > 0 ? rateVal * 100 : rateVal;
-    return sum + (price * qty * rate) / 100;
-  }, 0);
-
-  const calculatedTotal = calculatedSubtotal + calculatedTax;
-
-  const subtotal = currentOrder ? parseFloat(currentOrder.subtotal) : calculatedSubtotal;
-  const tax = currentOrder ? parseFloat(currentOrder.tax_total) : calculatedTax;
-  const total = currentOrder ? parseFloat(currentOrder.total) : calculatedTotal;
+  // Preview: optimistically subtract coupon from displayed total
+  const previewDiscount = discountPreview ? parseFloat(discountPreview.discount_amount) : 0;
+  const displayDiscount = Math.max(serverDiscount, previewDiscount);
+  const displayTotal    = serverDiscount > 0
+    ? serverTotal   // server already baked in discount
+    : Math.max(0, serverTotal - previewDiscount);
 
   const isDraft = currentOrder?.status === 'draft';
-  const isSent = currentOrder?.status === 'sent';
+  const isSent  = currentOrder?.status === 'sent';
 
-  // ─── Send to kitchen ─────────────────────────────────────────────────
+  // ─── Send to kitchen ──────────────────────────────────────────────
   const handleSendToKitchen = async () => {
     if (!currentOrder?.id) return;
     setIsSending(true);
@@ -89,7 +319,7 @@ export default function CartSection() {
     }
   };
 
-  // ─── Delete draft order ──────────────────────────────────────────────
+  // ─── Delete draft order ───────────────────────────────────────────
   const handleConfirmDelete = async () => {
     if (!currentOrder?.id) return;
     setIsDeleting(true);
@@ -106,7 +336,7 @@ export default function CartSection() {
 
   return (
     <>
-      {/* ─── Delete Confirmation Modal (P1's Modal component) ────────── */}
+      {/* ─── Delete Confirmation Modal ────────────────────────────────── */}
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
@@ -169,7 +399,14 @@ export default function CartSection() {
         </div>
       </Modal>
 
-      {/* ─── Cart panel ─────────────────────────────────────────────── */}
+      {/* ─── Discount popup ───────────────────────────────────────────── */}
+      <DiscountPopup
+        isOpen={isDiscountOpen}
+        onClose={() => setIsDiscountOpen(false)}
+        orderTotal={serverTotal}
+      />
+
+      {/* ─── Cart panel ──────────────────────────────────────────────── */}
       <div
         style={{
           display: 'flex',
@@ -227,7 +464,7 @@ export default function CartSection() {
           </span>
         </div>
 
-        {/* ─── Cart items list ──────────────────────────────────────── */}
+        {/* ─── Cart items list ───────────────────────────────────────── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px' }}>
           {items.length === 0 ? (
             <div
@@ -248,7 +485,6 @@ export default function CartSection() {
           ) : (
             <div>
               {items.map((item) => (
-                /* Cart line item — guidelines §4.2 */
                 <div
                   key={item.product_id}
                   style={{
@@ -287,13 +523,7 @@ export default function CartSection() {
                   </div>
 
                   {/* Qty stepper */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <button
                       aria-label={`Decrease quantity of ${item.product_name || item.name}`}
                       onClick={() => updateQty(item.product_id, item.quantity - 1)}
@@ -358,7 +588,7 @@ export default function CartSection() {
                     </button>
                   </div>
 
-                  {/* Line total — server-returned value (guidelines: never local math for display) */}
+                  {/* Line total */}
                   <span
                     style={{
                       fontFamily: 'monospace',
@@ -378,7 +608,7 @@ export default function CartSection() {
           )}
         </div>
 
-        {/* ─── Order Summary box — guidelines §4.3 (inner-panel style) ─ */}
+        {/* ─── Order Summary box ────────────────────────────────────── */}
         <div
           style={{
             margin: '12px 16px',
@@ -388,61 +618,95 @@ export default function CartSection() {
             flexShrink: 0,
           }}
         >
-          <div
-            style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}
-          >
+          {/* Subtotal */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ fontSize: '13px', color: '#6B7280' }}>Subtotal</span>
             <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#1A1A1A' }}>
               {formatCurrency(subtotal)}
             </span>
           </div>
-          <div
-            style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}
-          >
+
+          {/* Tax */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ fontSize: '13px', color: '#6B7280' }}>Tax</span>
             <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#1A1A1A' }}>
               {formatCurrency(tax)}
             </span>
           </div>
-          {currentOrder && parseFloat(currentOrder.discount_total) > 0 && (
+
+          {/* Coupon discount preview — shown when coupon applied but not yet paid */}
+          {discountPreview && serverDiscount === 0 && (
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 marginBottom: '6px',
+                background: '#F0FDF4',
+                margin: '4px -16px',
+                padding: '6px 16px',
+                border: '1px dashed #22C55E',
               }}
             >
-              <span style={{ fontSize: '13px', color: '#92400E' }}>Discount</span>
-              <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#92400E' }}>
-                −{formatCurrency(currentOrder.discount_total)}
+              <span style={{ fontSize: '13px', color: '#065F46', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>🏷</span>
+                <span>
+                  <strong style={{ fontFamily: 'monospace' }}>{discountPreview.code}</strong>
+                  <span style={{ color: '#6B7280', marginLeft: 4, fontSize: 11 }}>(preview)</span>
+                </span>
+              </span>
+              <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#065F46', fontWeight: 700 }}>
+                −{formatCurrency(discountPreview.discount_amount)}
               </span>
             </div>
           )}
 
-          {/* TODO: discount preview — pending P4 decision.
-              Per tracker §C ⚠️: promotion discounts are only computed server-side
-              at POST /orders/:id/pay. Do NOT build a preview UI here until the
-              joint decision with P4 is made at Checkpoint A/B. */}
+          {/* Server-confirmed discount (already baked into total) */}
+          {serverDiscount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{ fontSize: '13px', color: '#92400E' }}>Discount</span>
+              <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#92400E' }}>
+                −{formatCurrency(serverDiscount)}
+              </span>
+            </div>
+          )}
+
+          {/* Tip (if any) */}
+          {tip > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{ fontSize: '13px', color: '#6B7280' }}>Tip</span>
+              <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#1A1A1A' }}>
+                +{formatCurrency(tip)}
+              </span>
+            </div>
+          )}
 
           {/* Divider */}
           <div style={{ height: '1px', backgroundColor: '#1A1A1A', margin: '10px 0' }} />
 
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          {/* Total */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '16px', fontWeight: 900, color: '#1A1A1A' }}>Total</span>
-            <span
-              style={{
-                fontFamily: 'monospace',
-                fontSize: '18px',
-                fontWeight: 900,
-                color: '#1A1A1A',
-              }}
-            >
-              {formatCurrency(total)}
-            </span>
+            <div style={{ textAlign: 'right' }}>
+              {discountPreview && serverDiscount === 0 && (
+                <div style={{ fontSize: 11, color: '#9CA3AF', textDecoration: 'line-through', fontFamily: 'monospace' }}>
+                  {formatCurrency(serverTotal)}
+                </div>
+              )}
+              <span
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: '18px',
+                  fontWeight: 900,
+                  color: discountPreview && serverDiscount === 0 ? '#065F46' : '#1A1A1A',
+                }}
+              >
+                {formatCurrency(displayTotal)}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* ─── Action buttons ───────────────────────────────────────── */}
+        {/* ─── Action buttons ────────────────────────────────────────── */}
         <div
           style={{
             padding: '0 16px 16px',
@@ -468,20 +732,56 @@ export default function CartSection() {
             </div>
           )}
 
-          {/* Send to Kitchen — PRIMARY button */}
+          {/* Discount / Coupon button — only on draft orders with items */}
+          {isDraft && items.length > 0 && (
+            <button
+              id="cart-discount-btn"
+              onClick={() => setIsDiscountOpen(true)}
+              style={{
+                background: couponCode ? '#F0FDF4' : '#fff',
+                border: couponCode ? '2px solid #22C55E' : '2px solid #1A1A1A',
+                borderRadius: '10px',
+                color: couponCode ? '#065F46' : '#1A1A1A',
+                fontWeight: 700,
+                fontSize: '13px',
+                padding: '10px 16px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+                minHeight: '44px',
+                transition: 'all 0.15s',
+                boxShadow: couponCode ? '2px 2px 0 #22C55E' : '2px 2px 0 #1A1A1A',
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>🏷</span>
+                {couponCode ? (
+                  <>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 900 }}>{couponCode}</span>
+                    <span style={{ fontSize: 11, color: '#6B7280' }}>applied</span>
+                  </>
+                ) : (
+                  'Add Discount Code'
+                )}
+              </span>
+              {couponCode ? (
+                <span style={{ fontSize: 14, color: '#22C55E', fontWeight: 900 }}>
+                  −{formatCurrency(discountPreview?.discount_amount)}
+                </span>
+              ) : (
+                <span style={{ fontSize: 14, color: '#9CA3AF' }}>›</span>
+              )}
+            </button>
+          )}
+
+          {/* Send to Kitchen — PRIMARY */}
           <button
             onClick={handleSendToKitchen}
-            disabled={
-              items.length === 0 ||
-              !isDraft ||
-              isSending ||
-              isCartLoading
-            }
+            disabled={items.length === 0 || !isDraft || isSending || isCartLoading}
             style={{
-              background:
-                items.length === 0 || !isDraft
-                  ? '#E5E7EB'
-                  : '#F5C142',
+              background: items.length === 0 || !isDraft ? '#E5E7EB' : '#F5C142',
               border: '2px solid #1A1A1A',
               borderRadius: '10px',
               color: '#1A1A1A',
@@ -514,7 +814,7 @@ export default function CartSection() {
             )}
           </button>
 
-          {/* Delete Order — DANGER button (only while draft) */}
+          {/* Delete Order — DANGER (draft only) */}
           {isDraft && (
             <button
               onClick={() => setIsDeleteModalOpen(true)}
@@ -541,6 +841,3 @@ export default function CartSection() {
     </>
   );
 }
-
-
-
